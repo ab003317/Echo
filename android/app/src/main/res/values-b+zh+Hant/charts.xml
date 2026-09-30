@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="chart_tab">榜單</string>
+    <string name="release_tab">新發行</string>
+    <string name="chart_global">全球</string>
+    <string name="chart_hk">香港</string>
+    <string name="chart_tw">台灣</string>
+    <string name="chart_jp">日本</string>
+    <string name="chart_week">近 7 天</string>
+    <string name="chart_month">近 30 天</string>
+    <string name="chart_all_time">所有時間</string>
+    <string name="chart_youtube_title">YouTube 每週熱門歌曲</string>
+    <string name="chart_apple_title">Apple Music 熱門歌曲</string>
+    <string name="chart_echo_title">Echo 播放排行</string>
+    <string name="chart_echo_basis">依有效播放次數排序；相同次數比較聆聽秒數</string>
+    <string name="chart_source_date">來源日期：%1$s</string>
+    <string name="chart_waiting">正在讀取來源資料</string>
+    <string name="catalog_connection_error">來源暫時無法連線，下拉可重試</string>
+    <string name="catalog_cached">顯示已儲存資料，部分來源仍待更新</string>
+    <string name="catalog_empty">暫無資料</string>
+    <string name="catalog_refresh_hint">下拉重新整理，或稍後再試</string>
+    <string name="catalog_prepare_play">加入音樂庫後播放</string>
+    <string name="catalog_find_audio">搜尋音源</string>
+    <string name="release_order">依發行日期，由新到舊</string>
+    <string name="release_source">已關注歌手的新發行</string>
+    <string name="release_follow_count">已關注 %1$d 位歌手 · Apple Music 發行日期</string>
+    <string name="release_empty">搜尋並關注歌手後，這裡會按發行日期排列歌曲</string>
+    <string name="follow_artists">關注歌手</string>
+    <string name="follow_add">關注</string>
+    <string name="follow_remove">取消關注</string>
+    <string name="follow_search">搜尋歌手名稱</string>
+    <string name="follow_identity_hint">選擇 Apple Music 目錄地區，再確認要關注的歌手</string>
+    <string name="follow_not_found">沒有符合的歌手，可更換地區或名稱</string>
+    <string name="queue_drag_hint">長按左側拖曳柄調整順序</string>
+    <string name="queue_reorder">調整 %1$s 的播放順序</string>
+    <string name="queue_move_up">上移</string>
+    <string name="queue_move_down">下移</string>
+    <string name="queue_remove">從佇列移除</string>
+</resources>

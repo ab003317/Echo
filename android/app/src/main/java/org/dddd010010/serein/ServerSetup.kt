@@ -34,7 +34,7 @@ import kotlinx.coroutines.CancellationException
                     },enabled=!busy) { Text(if(AppLocale.language=="en")"繁體中文" else "English") }
                 }
                 Spacer(Modifier.height(48.dp))
-                Text("Echo",fontFamily=SereinFont,fontSize=48.sp,fontWeight=FontWeight.Medium,letterSpacing=(-2).sp)
+                Text("Echo",fontFamily=EchoLatinTitle,fontSize=48.sp,fontWeight=FontWeight.Medium)
                 Text(tr(R.string.setup_title),fontSize=24.sp,modifier=Modifier.padding(top=12.dp,bottom=12.dp))
                 Text(tr(R.string.setup_description),color=Muted,lineHeight=24.sp)
                 Spacer(Modifier.height(32.dp))

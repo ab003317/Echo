@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="chart_tab">Charts</string>
+    <string name="release_tab">New releases</string>
+    <string name="chart_global">Global</string>
+    <string name="chart_hk">Hong Kong</string>
+    <string name="chart_tw">Taiwan</string>
+    <string name="chart_jp">Japan</string>
+    <string name="chart_week">Last 7 days</string>
+    <string name="chart_month">Last 30 days</string>
+    <string name="chart_all_time">All time</string>
+    <string name="chart_youtube_title">YouTube weekly top songs</string>
+    <string name="chart_apple_title">Apple Music top songs</string>
+    <string name="chart_echo_title">Echo listening chart</string>
+    <string name="chart_echo_basis">Ranked by qualifying plays; listening time breaks ties</string>
+    <string name="chart_source_date">Source date: %1$s</string>
+    <string name="chart_waiting">Retrieving source data</string>
+    <string name="catalog_connection_error">Source unavailable. Pull down to retry</string>
+    <string name="catalog_cached">Showing saved data; some sources need updating</string>
+    <string name="catalog_empty">No results</string>
+    <string name="catalog_refresh_hint">Pull down to refresh or try again later</string>
+    <string name="catalog_prepare_play">Add to library and play</string>
+    <string name="catalog_find_audio">Find audio</string>
+    <string name="release_order">Release date, newest first</string>
+    <string name="release_source">Releases from followed artists</string>
+    <string name="release_follow_count">%1$d artists followed · Apple Music release dates</string>
+    <string name="release_empty">Search and follow artists to list their songs by release date</string>
+    <string name="follow_artists">Followed artists</string>
+    <string name="follow_add">Follow</string>
+    <string name="follow_remove">Unfollow</string>
+    <string name="follow_search">Search artist names</string>
+    <string name="follow_identity_hint">Select an Apple Music catalogue region and confirm the artist to follow</string>
+    <string name="follow_not_found">No matching artists. Try another region or name</string>
+    <string name="queue_drag_hint">Hold the left handle and drag to reorder</string>
+    <string name="queue_reorder">Reorder %1$s</string>
+    <string name="queue_move_up">Move up</string>
+    <string name="queue_move_down">Move down</string>
+    <string name="queue_remove">Remove from queue</string>
+</resources>

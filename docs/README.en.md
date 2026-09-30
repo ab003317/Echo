@@ -12,9 +12,14 @@ daily discovery and recommendations informed by listening behavior.
   permanent, and part of the unheard pool rotates daily.
 - Daily artist, series, style and random mixes. Saved mixes are retained.
   Style mixes require actual audio evidence.
+- YouTube and Apple Music regional charts, Echo listening rankings, and releases
+  from followed artists.
 - AI uses listening time, repeats, completion and intentional skips.
   **Song titles are never treated as evidence of genre.**
 - Traditional Chinese and English in the app and deployment documentation.
+
+See [Music sources, selection and AI](recommendation-engine.en.md) for the
+retrieval pipeline, ranking formula, actual prompts and current limitations.
 
 Each deployment shares one library, history and preference profile, with no
 separate user accounts or app access keys. Anyone who can reach the server can

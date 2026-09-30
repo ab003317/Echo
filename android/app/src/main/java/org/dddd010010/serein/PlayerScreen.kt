@@ -5,6 +5,8 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -15,6 +17,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.zIndex
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.animation.animateColorAsState
@@ -69,7 +76,7 @@ data class PlaybackUi(val repeat:Int,val shuffle:Boolean,val playing:Boolean,val
     Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()){
         Row(Modifier.fillMaxWidth().padding(horizontal=14.dp,vertical=4.dp),verticalAlignment=Alignment.CenterVertically){IconButton(onClick=close){Icon(Icons.Rounded.KeyboardArrowDown,tr(R.string.ui_collapse_player),Modifier.size(26.dp))};Text(tr(R.string.ui_now_playing),fontSize=12.sp,color=TextBright.copy(alpha=.72f),modifier=Modifier.weight(1f),textAlign=androidx.compose.ui.text.style.TextAlign.Center);IconButton(onClick=menu){Icon(Icons.Rounded.MoreHoriz,tr(R.string.ui_song_options))}}
         val controls:@Composable ()->Unit={Column(Modifier.fillMaxWidth().padding(horizontal=28.dp)){
-            Row(Modifier.padding(top=28.dp,bottom=14.dp),verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){Text(song.title,fontSize=27.sp,fontWeight=FontWeight.Medium,letterSpacing=(-.6).sp,maxLines=2,overflow=TextOverflow.Ellipsis,lineHeight=33.sp);Text(song.artist,fontSize=14.sp,color=TextBright.copy(alpha=.62f),maxLines=1,overflow=TextOverflow.Ellipsis,modifier=Modifier.padding(top=8.dp))};IconButton(onClick={Library.toggleFavorite(song)}){Icon(if(song.id in Library.favorites)Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,tr(R.string.ui_favorites),tint=if(song.id in Library.favorites)TextBright else Muted)}}
+            Row(Modifier.padding(top=28.dp,bottom=14.dp),verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){Text(song.title,fontFamily=EchoTitleFont,fontSize=27.sp,fontWeight=FontWeight.Medium,letterSpacing=0.sp,maxLines=2,overflow=TextOverflow.Ellipsis,lineHeight=33.sp);Text(song.artist,fontSize=14.sp,color=TextBright.copy(alpha=.62f),maxLines=1,overflow=TextOverflow.Ellipsis,modifier=Modifier.padding(top=8.dp))};IconButton(onClick={Library.toggleFavorite(song)}){Icon(if(song.id in Library.favorites)Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,tr(R.string.ui_favorites),tint=if(song.id in Library.favorites)TextBright else Muted)}}
             PlayerProgress(c)
             Row(Modifier.fillMaxWidth().padding(top=16.dp),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){
                 IconButton(onClick={c?.shuffleModeEnabled=!ui.shuffle}){Icon(Icons.Rounded.Shuffle,if(ui.shuffle)tr(R.string.ui_turn_shuffle_off) else tr(R.string.ui_turn_shuffle_on),tint=if(ui.shuffle)Gold else Muted)}
@@ -95,24 +102,81 @@ data class PlaybackUi(val repeat:Int,val shuffle:Boolean,val playing:Boolean,val
 
 @Composable fun QueueScreen(c:MediaController?,events:Int,close:()->Unit){
     val songs=Library.songs.associateBy{it.id}
-    val queue=remember(c,events){(0 until (c?.mediaItemCount ?: 0)).map{c!!.getMediaItemAt(it)}}
-    val current=c?.currentMediaItemIndex ?: -1
-    val state=rememberLazyListState(initialFirstVisibleItemIndex=current.coerceAtLeast(0))
-    Column{SheetTitle(tr(R.string.ui_queue_235, queue.size),close)
-        LazyColumn(state=state,modifier=Modifier.fillMaxWidth().weight(1f,false),contentPadding=PaddingValues(bottom=20.dp)){
-            if(queue.isEmpty())item{EmptyState(tr(R.string.ui_your_queue_is_empty),tr(R.string.ui_choose_a_song_to_start_listening))}
-            itemsIndexed(queue,key={i,item->"${item.mediaId}-$i"}){index,item->
+    val live=remember(c,events){
+        val copies=mutableMapOf<Int,Int>()
+        (0 until (c?.mediaItemCount ?: 0)).map{index->val item=c!!.getMediaItemAt(index);val identity=System.identityHashCode(item);val occurrence=copies.getOrDefault(identity,0);copies[identity]=occurrence+1;QueueItem("$identity:$occurrence",item)}
+    }
+    var rows by remember(c){mutableStateOf(live)}
+    var dragged by remember{mutableStateOf<String?>(null)}
+    var dragTop by remember{mutableFloatStateOf(0f)}
+    var dragHeight by remember{mutableIntStateOf(0)}
+    val state=rememberLazyListState(initialFirstVisibleItemIndex=(c?.currentMediaItemIndex ?: 0).coerceAtLeast(0))
+    LaunchedEffect(live){rows=live;dragged=null}
+    fun reorder(){
+        val key=dragged ?: return
+        val from=rows.indexOfFirst{it.key==key}
+        val midpoint=dragTop+dragHeight/2f
+        val target=state.layoutInfo.visibleItemsInfo.firstOrNull{it.key!=key && midpoint>=it.offset && midpoint<it.offset+it.size} ?: return
+        val to=rows.indexOfFirst{it.key==target.key}
+        if(from>=0 && to>=0)rows=rows.toMutableList().apply{add(to,removeAt(from))}
+    }
+    fun finish(commit:Boolean){
+        val key=dragged
+        if(commit && key!=null){val from=live.indexOfFirst{it.key==key};val to=rows.indexOfFirst{it.key==key};if(from>=0 && to>=0 && from!=to)c?.moveMediaItem(from,to)}
+        else rows=live
+        dragged=null
+    }
+    LaunchedEffect(dragged){while(dragged!=null){
+        val info=state.layoutInfo
+        val edge=dragHeight.coerceAtLeast(48)
+        val distance=when{dragTop<info.viewportStartOffset+edge->-12f;dragTop+dragHeight>info.viewportEndOffset-edge->12f;else->0f}
+        if(distance!=0f){state.scrollBy(distance);reorder()}
+        delay(16)
+    }}
+    val current=live.getOrNull(c?.currentMediaItemIndex ?: -1)?.key
+    Column{SheetTitle(tr(R.string.ui_queue_235, rows.size),close)
+        Text(tr(R.string.queue_drag_hint),color=Muted,fontSize=12.sp,modifier=Modifier.padding(start=24.dp,end=24.dp,top=4.dp,bottom=16.dp))
+        LazyColumn(state=state,modifier=Modifier.fillMaxWidth().weight(1f,false),contentPadding=PaddingValues(bottom=24.dp)){
+            if(rows.isEmpty())item{EmptyState(tr(R.string.ui_your_queue_is_empty),tr(R.string.ui_choose_a_song_to_start_listening))}
+            itemsIndexed(rows,key={_,entry->entry.key}){index,entry->
+                val item=entry.item
                 val song=songs[item.mediaId]
-                Row(Modifier.fillMaxWidth().background(if(index==current)Panel else Night).padding(start=16.dp,end=4.dp,top=5.dp,bottom=5.dp),verticalAlignment=Alignment.CenterVertically){
-                    Row(Modifier.weight(1f).clickable{c?.seekTo(index,0);c?.prepare();c?.play()}.padding(vertical=5.dp),verticalAlignment=Alignment.CenterVertically){Artwork(song,Modifier.size(42.dp),6);Column(Modifier.padding(start=12.dp)){Text(song?.title ?: item.mediaMetadata.title.toString(),fontSize=14.sp,color=if(index==current)Gold else TextBright,maxLines=1,overflow=TextOverflow.Ellipsis);Text(if(index==current)tr(R.string.ui_now_playing) else song?.artist.orEmpty(),fontSize=11.sp,color=Muted,maxLines=1,overflow=TextOverflow.Ellipsis)}}
-                    IconButton(onClick={c?.moveMediaItem(index,index-1)},enabled=index>0){Icon(Icons.Rounded.KeyboardArrowUp,tr(R.string.ui_move_item_up, index+1),Modifier.size(19.dp))}
-                    IconButton(onClick={c?.moveMediaItem(index,index+1)},enabled=index<queue.lastIndex){Icon(Icons.Rounded.KeyboardArrowDown,tr(R.string.ui_move_item_down, index+1),Modifier.size(19.dp))}
-                    IconButton(onClick={c?.removeMediaItem(index)}){Icon(Icons.Rounded.Close,tr(R.string.ui_remove_item, index+1),Modifier.size(17.dp),tint=Muted)}
+                var options by remember(entry.key){mutableStateOf(false)}
+                val isDragged=dragged==entry.key
+                val offset=state.layoutInfo.visibleItemsInfo.firstOrNull{it.key==entry.key}?.offset ?: 0
+                Row(Modifier.fillMaxWidth().zIndex(if(isDragged)1f else 0f)
+                    .graphicsLayer{translationY=if(isDragged)dragTop-offset else 0f}
+                    .then(if(isDragged)Modifier.shadow(10.dp) else Modifier.animateItem())
+                    .background(if(isDragged)Raised else if(entry.key==current)Panel else Night)
+                    .padding(end=8.dp,top=9.dp,bottom=9.dp),verticalAlignment=Alignment.CenterVertically){
+                    val dragLabel=tr(R.string.queue_reorder,song?.title ?: item.mediaMetadata.title.toString())
+                    Box(Modifier.size(44.dp).semantics{contentDescription=dragLabel}.pointerInput(entry.key,live){
+                        detectDragGesturesAfterLongPress(onDragStart={
+                            val visible=state.layoutInfo.visibleItemsInfo.firstOrNull{it.key==entry.key}
+                            if(visible!=null){dragTop=visible.offset.toFloat();dragHeight=visible.size;dragged=entry.key}
+                        },onDragEnd={finish(true)},onDragCancel={finish(false)},onDrag={change,amount->change.consume();dragTop+=amount.y;reorder()})
+                    },contentAlignment=Alignment.Center){Icon(Icons.Rounded.DragHandle,null,Modifier.size(19.dp),tint=Muted.copy(alpha=.6f))}
+                    Row(Modifier.weight(1f).clickable(enabled=dragged==null){c?.seekTo(index,0);c?.prepare();c?.play()},verticalAlignment=Alignment.CenterVertically){
+                        Artwork(song,Modifier.size(48.dp),5)
+                        Column(Modifier.weight(1f).padding(start=13.dp,end=4.dp)){
+                            Text(song?.title ?: item.mediaMetadata.title.toString(),fontSize=15.sp,fontWeight=FontWeight.Medium,maxLines=1,overflow=TextOverflow.Ellipsis)
+                            Text(if(entry.key==current)tr(R.string.ui_now_playing) else song?.artist ?: item.mediaMetadata.artist?.toString().orEmpty(),fontSize=12.sp,color=Muted,maxLines=1,overflow=TextOverflow.Ellipsis,modifier=Modifier.padding(top=5.dp))
+                        }
+                    }
+                    Box{
+                        IconButton(onClick={options=true},enabled=dragged==null){Icon(Icons.Rounded.MoreHoriz,tr(R.string.ui_song_options),Modifier.size(21.dp),tint=Muted)}
+                        DropdownMenu(expanded=options,onDismissRequest={options=false}){
+                            DropdownMenuItem(text={Text(tr(R.string.queue_move_up))},enabled=index>0,onClick={options=false;c?.moveMediaItem(index,index-1)})
+                            DropdownMenuItem(text={Text(tr(R.string.queue_move_down))},enabled=index<rows.lastIndex,onClick={options=false;c?.moveMediaItem(index,index+1)})
+                            DropdownMenuItem(text={Text(tr(R.string.queue_remove))},onClick={options=false;c?.removeMediaItem(index)})
+                        }
+                    }
                 }
             }
         }
     }
 }
+private data class QueueItem(val key:String,val item:androidx.media3.common.MediaItem)
 
 @Composable fun SongSheet(song:Song,c:MediaController?,playlistContext:String,close:()->Unit,message:(String)->Unit){
     var route by remember{mutableStateOf("menu")}

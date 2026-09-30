@@ -22,6 +22,7 @@ from urllib.parse import parse_qs, urlparse
 
 import mutagen
 from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import Path as ApiPath
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from .ai import AIConfig
@@ -32,6 +33,7 @@ from .seeds import Seeds, artist_matches
 from .history import History
 from .mixes import Mixes
 from .traits import AudioTraits
+from .charts import Charts, REGIONS
 
 ROOT = Path(os.getenv("SEREIN_MUSIC_ROOT", "music")).resolve()
 DATA = Path(os.getenv("SEREIN_DATA_DIR", "data")).resolve()
@@ -76,6 +78,7 @@ def initialize():
     seeds.initialize()
     mixes.initialize()
     history.initialize()
+    charts.initialize()
 
 
 def scan(wait=False):
@@ -479,6 +482,7 @@ async def lifespan(app):
     radio_thread = threading.Thread(target=radio.loop, args=(stop,), daemon=True)
     radio_thread.start()
     threading.Thread(target=traits.loop, args=(stop,), daemon=True).start()
+    threading.Thread(target=charts.loop, args=(stop,), daemon=True).start()
     yield
     stop.set()
     radio.wake.set()
@@ -490,12 +494,13 @@ radio = Radio(sys.modules[__name__])
 history = History(sys.modules[__name__])
 mixes = Mixes(sys.modules[__name__])
 traits = AudioTraits(sys.modules[__name__])
+charts = Charts(sys.modules[__name__])
 app = FastAPI(title="Echo", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
 
 
 @app.get("/music/api/health")
 def health():
-    return {"ok": True, "version": "0.8.0", "access": "direct", "instanceId": radio.get('instanceId', ''),
+    return {"ok": True, "version": "0.9.0", "access": "direct", "instanceId": radio.get('instanceId', ''),
             "aiConfigured": AIConfig.from_env().enabled, "audioConfigured": AIConfig.from_env(audio=True).enabled}
 
 
@@ -676,6 +681,58 @@ def playback(body: PlaybackEvent):
 def playback_history(cursor: str = Query(default='', max_length=500),
                      limit: int = Query(default=50, ge=1, le=100), q: str = Query(default='', max_length=150)):
     return history.page(cursor, limit, q.strip())
+
+
+@app.get('/music/api/charts')
+def chart_sources():
+    return {'sources': [{'provider': p, 'regions': list(regions)} for p, regions in REGIONS.items()],
+            'echoPeriods': [7, 30, 0]}
+
+
+@app.get('/music/api/charts/echo')
+def echo_chart(days: int = Query(default=7)):
+    if days not in (0, 7, 30):
+        raise HTTPException(422, '請選擇 7、30 或 0 天 / Select 7, 30 or 0 days')
+    return charts.ranking(days)
+
+
+@app.get('/music/api/charts/{provider}/{region}')
+def external_chart(provider: str, region: str, refresh: bool = False):
+    return charts.chart(provider, region, refresh)
+
+
+@app.get('/music/api/artists/search')
+def find_artists(q: str = Query(min_length=1, max_length=120), country: Literal['hk', 'tw', 'jp'] = 'hk'):
+    try:
+        return charts.search_artists(q, country)
+    except Exception:
+        raise HTTPException(502, '歌手資料暫時無法連線 / Artist catalogue unavailable') from None
+
+
+@app.get('/music/api/artists')
+def followed_artists():
+    return {'artists': charts.artists()}
+
+
+class ArtistFollow(BaseModel):
+    country: Literal['hk', 'tw', 'jp'] = 'hk'
+    followed: bool
+
+
+@app.put('/music/api/artists/{artist}')
+def follow_artist(body: ArtistFollow, artist: str = ApiPath(pattern=r'^\d{1,20}$')):
+    try:
+        return charts.follow(artist, body.country, body.followed)
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(502, '歌手資料暫時無法連線 / Artist catalogue unavailable') from None
+
+
+@app.get('/music/api/releases')
+def artist_releases(refresh: bool = False, offset: int = Query(default=0, ge=0, le=10000),
+                    limit: int = Query(default=50, ge=1, le=100)):
+    return charts.releases(refresh, offset, limit)
 
 
 @app.get('/music/api/mixes')

@@ -280,7 +280,7 @@ object Library {
         val next = JSONArray(); for(i in 0 until old.length()) if(old.getString(i) != s.id) next.put(old.getString(i))
         save("playlists", all.put(name, next))
     }
-    fun request(path: String) = Request.Builder().url("$base/api/$path").header("User-Agent", "Echo/0.8").header("Accept-Language", AppLocale.language)
+    fun request(path: String) = Request.Builder().url("$base/api/$path").header("User-Agent", "Echo/0.9").header("Accept-Language", AppLocale.language)
     fun api(path: String, method: String = "GET", body: JSONObject? = null, client: OkHttpClient = http): JSONObject {
         val serverProfile=profile
         val req = request(path)

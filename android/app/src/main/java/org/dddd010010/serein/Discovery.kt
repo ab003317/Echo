@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -60,9 +61,11 @@ class DiscoveryModel:ViewModel(){
     private var continuity=emptyList<DiscoveryTrack>()
     private val seen=linkedSetOf<String>()
     private val adding=mutableStateListOf<String>()
+    private var pendingPlayVideo=""
     init {
         val cache=Library.obj("discoveryState")
         resultQuery=cache.optString("query");query=resultQuery;mode=cache.optString("mode","taste")
+        if(mode !in listOf("taste","new"))mode="taste"
         rows=if(cache.optInt("schema")==2)cache.optJSONArray("tracks")?.objects()?.map{DiscoveryTrack.from(it)} ?: emptyList() else emptyList()
         // A restored feed is useful immediately; a fresh session starts on first load-more.
         seen.addAll(rows.map{it.id})
@@ -82,6 +85,7 @@ class DiscoveryModel:ViewModel(){
         val next=Library.apiAsync("imports").getJSONArray("jobs").objects()
         if(next.any{j->j.optString("status")=="complete" && jobs.none{it.optString("id")==j.optString("id") && it.optString("status")=="complete"}})libraryChanged++
         jobs=next
+        next.find{it.optString("video")==pendingPlayVideo && it.optString("status")=="complete"}?.let{playWhenReady=it.optString("track");pendingPlayVideo="";libraryChanged++}
     }catch(e:CancellationException){throw e}catch(_:Exception){}}
     fun ensureLoaded(){if(rows.isEmpty() && !loading)refresh()}
     fun changeMode(value:String){if(mode==value && query.isBlank())return;mode=value;query="";refresh("",preserve=false)}
@@ -128,17 +132,19 @@ class DiscoveryModel:ViewModel(){
         }
     }
     fun state(id:String):String=if(id in adding)"queued" else jobs.find{it.optString("video")==id}?.optString("status").orEmpty()
-    fun add(url:String,title:String="",message:(String)->Unit){
+    fun add(url:String,title:String="",message:(String)->Unit,playAfter:Boolean=false){
         if(url in adding)return
         adding.add(url)
         viewModelScope.launch{try{
-            Library.apiAsync("imports","POST",JSONObject().put("url",url).put("title",title));pollJobs();message(tr(R.string.ui_added_ready_to_play_once_processing_finishes))
+            Library.apiAsync("imports","POST",JSONObject().put("url",url).put("title",title));if(playAfter)pendingPlayVideo=url;pollJobs();message(tr(R.string.ui_added_ready_to_play_once_processing_finishes))
         }catch(e:CancellationException){throw e}catch(e:Exception){message(e.message ?: tr(R.string.ui_could_not_add_this_song_try_again))}finally{adding.remove(url)}}
     }
     fun play(id:String){val job=jobs.find{it.optString("video")==id};if(job!=null){playWhenReady=job.optString("track");libraryChanged++}}
 }
 
 @Composable fun DiscoveryScreen(model:DiscoveryModel,message:(String)->Unit,play:(List<Song>,Int)->Unit){
+    val charts:ChartModel=viewModel(key="charts-"+Library.profile)
+    var section by rememberSaveable{mutableStateOf(model.mode)}
     val listState=rememberLazyGridState()
     var link by rememberSaveable{mutableStateOf(false)}
     var tasks by rememberSaveable{mutableStateOf(false)}
@@ -161,19 +167,21 @@ class DiscoveryModel:ViewModel(){
     }
     Column {
         Row(Modifier.padding(start=24.dp,end=8.dp,top=8.dp,bottom=18.dp),verticalAlignment=Alignment.CenterVertically){
-            Text(tr(R.string.ui_discover),fontSize=28.sp,fontWeight=FontWeight.Medium,letterSpacing=(-1).sp,modifier=Modifier.weight(1f))
+            Text(tr(R.string.ui_discover),fontFamily=EchoTitleFont,fontSize=28.sp,fontWeight=FontWeight.Medium,letterSpacing=0.sp,modifier=Modifier.weight(1f))
             IconButton(onClick={tasks=true}){BadgedBox(badge={val active=model.jobs.count{it.optString("status") in listOf("queued","downloading")};if(active>0)Badge{Text(active.toString())}}){Icon(Icons.Rounded.PlaylistAddCheck,tr(R.string.ui_imports))}}
             IconButton(onClick={link=true}){Icon(Icons.Rounded.AddLink,tr(R.string.ui_paste_a_link))}
         }
         SearchBox(model.query,{model.query=it},tr(R.string.ui_song_artist_or_youtube_link),submit={
-            if(model.query.trim().startsWith("https://"))model.add(model.query.trim(),message=message) else {model.search();scope.launch{listState.scrollToItem(0)}}
-        },clear={model.query="";model.search()})
+            if(model.query.trim().startsWith("https://"))model.add(model.query.trim(),message=message) else {section=model.mode;model.search();scope.launch{listState.scrollToItem(0)}}
+        },clear={section=model.mode;model.query="";model.search()})
         Row(Modifier.fillMaxWidth().padding(start=24.dp,end=12.dp,top=6.dp,bottom=16.dp),verticalAlignment=Alignment.CenterVertically){
             LazyRow(Modifier.weight(1f)){
-                items(listOf("taste" to tr(R.string.ui_for_you),"new" to tr(R.string.ui_explore),"calm" to tr(R.string.ui_unwind),"energy" to tr(R.string.ui_energize))){(id,label)->LineTab(label,model.mode==id && model.resultQuery.isBlank()){model.changeMode(id);scope.launch{listState.scrollToItem(0)}}}
+                items(listOf("taste" to tr(R.string.ui_for_you),"new" to tr(R.string.ui_explore),"charts" to tr(R.string.chart_tab),"releases" to tr(R.string.release_tab))){(id,label)->LineTab(label,section==id){section=id;if(id in listOf("taste","new")){model.changeMode(id);scope.launch{listState.scrollToItem(0)}}}}
             }
         }
-        PullToRefreshBox(isRefreshing=model.refreshing,onRefresh={refresh()},modifier=Modifier.weight(1f)){
+        if(section in listOf("charts","releases"))Box(Modifier.weight(1f)){
+            ChartScreen(charts,section,model,play,{query->section="taste";model.changeMode("taste");model.query=query;model.search()},message)
+        }else PullToRefreshBox(isRefreshing=model.refreshing,onRefresh={refresh()},modifier=Modifier.weight(1f)){
             LazyVerticalGrid(columns=GridCells.Adaptive(145.dp),state=listState,contentPadding=PaddingValues(start=24.dp,end=24.dp,bottom=24.dp),horizontalArrangement=Arrangement.spacedBy(16.dp),verticalArrangement=Arrangement.spacedBy(22.dp),modifier=Modifier.fillMaxSize()){
                 if(model.resultQuery.isNotBlank())item(span={GridItemSpan(maxLineSpan)}){Text(tr(R.string.ui_results_for, model.resultQuery),fontSize=13.sp,color=Muted,modifier=Modifier.padding(vertical=4.dp))}
                 items(model.rows,key={"discovery-${it.id}"}){song->DiscoveryRow(song,if(song.song!=null)"complete" else model.state(song.id),{

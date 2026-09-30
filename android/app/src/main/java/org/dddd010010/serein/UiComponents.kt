@@ -65,6 +65,15 @@ val SereinFont=FontFamily(
     Font(R.font.manrope,FontWeight.SemiBold,variationSettings=FontVariation.Settings(FontVariation.weight(600))),
     Font(R.font.manrope,FontWeight.Bold,variationSettings=FontVariation.Settings(FontVariation.weight(700)))
 )
+val EchoLatinTitle=FontFamily(
+    Font(R.font.space_grotesk,FontWeight.Medium,variationSettings=FontVariation.Settings(FontVariation.weight(500))),
+    Font(R.font.space_grotesk,FontWeight.SemiBold,variationSettings=FontVariation.Settings(FontVariation.weight(600)))
+)
+val EchoChineseTitle=FontFamily(
+    Font(R.font.noto_sans_tc,FontWeight.Medium,variationSettings=FontVariation.Settings(FontVariation.weight(500))),
+    Font(R.font.noto_sans_tc,FontWeight.SemiBold,variationSettings=FontVariation.Settings(FontVariation.weight(600)))
+)
+val EchoTitleFont:FontFamily get()=if(AppLocale.language=="en")EchoLatinTitle else EchoChineseTitle
 
 @Composable fun SereinTheme(content:@Composable ()->Unit){
     MaterialTheme(colorScheme=darkColorScheme(primary=Gold,onPrimary=Night,primaryContainer=Raised,onPrimaryContainer=TextBright,
@@ -75,7 +84,7 @@ val SereinFont=FontFamily(
             bodyLarge=TextStyle(fontFamily=SereinFont,fontSize=16.sp),
             bodyMedium=TextStyle(fontFamily=SereinFont,fontSize=14.sp),
             bodySmall=TextStyle(fontFamily=SereinFont,fontSize=12.sp),
-            titleLarge=TextStyle(fontFamily=SereinFont,fontSize=26.sp,fontWeight=FontWeight.Medium),
+            titleLarge=TextStyle(fontFamily=EchoTitleFont,fontSize=26.sp,lineHeight=34.sp,fontWeight=FontWeight.Medium),
             titleMedium=TextStyle(fontFamily=SereinFont,fontSize=16.sp,fontWeight=FontWeight.Medium),
             labelLarge=TextStyle(fontFamily=SereinFont,fontSize=14.sp,fontWeight=FontWeight.Medium),
             labelMedium=TextStyle(fontFamily=SereinFont,fontSize=12.sp,fontWeight=FontWeight.Medium),
@@ -129,8 +138,8 @@ val SereinFont=FontFamily(
         Box(Modifier.width(22.dp).height(2.dp).background(if(selected)TextBright else Color.Transparent,CircleShape))
     }
 }
-@Composable fun SheetTitle(title:String,close:()->Unit){Row(Modifier.fillMaxWidth().padding(start=22.dp,end=8.dp),verticalAlignment=Alignment.CenterVertically){Text(title,fontSize=23.sp,fontWeight=FontWeight.SemiBold,modifier=Modifier.weight(1f));IconButton(onClick=close){Icon(Icons.Rounded.Close,tr(R.string.ui_close))}}}
-@Composable fun Heading(title:String,action:String?=null,onClick:()->Unit={}){Row(Modifier.fillMaxWidth().padding(start=24.dp,end=14.dp,top=18.dp,bottom=12.dp),verticalAlignment=Alignment.CenterVertically){Text(title,fontSize=21.sp,fontWeight=FontWeight.Medium,letterSpacing=(-.5).sp,modifier=Modifier.weight(1f));if(action!=null)TextButton(onClick=onClick){Text(action,fontSize=12.sp,color=Muted)}}}
+@Composable fun SheetTitle(title:String,close:()->Unit){Row(Modifier.fillMaxWidth().padding(start=22.dp,end=8.dp),verticalAlignment=Alignment.CenterVertically){Text(title,fontFamily=EchoTitleFont,fontSize=23.sp,fontWeight=FontWeight.SemiBold,modifier=Modifier.weight(1f));IconButton(onClick=close){Icon(Icons.Rounded.Close,tr(R.string.ui_close))}}}
+@Composable fun Heading(title:String,action:String?=null,onClick:()->Unit={}){Row(Modifier.fillMaxWidth().padding(start=24.dp,end=14.dp,top=18.dp,bottom=12.dp),verticalAlignment=Alignment.CenterVertically){Text(title,fontFamily=EchoTitleFont,fontSize=21.sp,fontWeight=FontWeight.Medium,letterSpacing=0.sp,modifier=Modifier.weight(1f));if(action!=null)TextButton(onClick=onClick){Text(action,fontSize=12.sp,color=Muted)}}}
 @Composable fun EmptyState(title:String,body:String,action:String?=null,click:()->Unit={}){Column(Modifier.fillMaxWidth().padding(horizontal=28.dp,vertical=40.dp),horizontalAlignment=Alignment.CenterHorizontally){Icon(Icons.Rounded.GraphicEq,null,Modifier.size(38.dp),tint=Muted);Text(title,fontSize=19.sp,fontWeight=FontWeight.Medium,modifier=Modifier.padding(top=18.dp));Text(body,color=Muted,fontSize=13.sp,lineHeight=21.sp,modifier=Modifier.padding(top=10.dp));if(action!=null)TextButton(onClick=click,modifier=Modifier.padding(top=8.dp)){Text(action)}}}
 @Composable fun Artwork(song:Song?,modifier:Modifier=Modifier,radius:Int=4,tone:Boolean=false,priority:Boolean=tone){Box(modifier.clip(RoundedCornerShape(radius.dp)).background(Raised),contentAlignment=Alignment.Center){
     Icon(Icons.Rounded.Album,null,Modifier.fillMaxSize(.4f),tint=Muted.copy(alpha=.5f))

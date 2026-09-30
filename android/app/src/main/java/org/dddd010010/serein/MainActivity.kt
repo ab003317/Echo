@@ -167,7 +167,7 @@ class MainActivity : ComponentActivity() {
         Column(Modifier.fillMaxSize()){
         if(page==0)Row(Modifier.fillMaxWidth().padding(start=24.dp,end=12.dp,top=2.dp,bottom=4.dp),verticalAlignment=Alignment.CenterVertically){
             BrandMark(Modifier.size(36.dp))
-            Text("Echo",fontFamily=SereinFont,fontSize=23.sp,fontWeight=FontWeight.Medium,letterSpacing=(-.7).sp,modifier=Modifier.weight(1f).padding(start=11.dp))
+            Text("Echo",fontFamily=EchoLatinTitle,fontSize=23.sp,fontWeight=FontWeight.Medium,letterSpacing=(-.7).sp,modifier=Modifier.weight(1f).padding(start=11.dp))
             if(!Library.online) Icon(Icons.Rounded.CloudOff,tr(R.string.ui_offline),Modifier.size(18.dp),tint=Muted)
             IconButton(onClick={historyOpen=true}){Icon(Icons.Outlined.History,tr(R.string.ui_listening_history),Modifier.size(21.dp),tint=Muted)}
             IconButton(onClick={settings=true}){Icon(Icons.Outlined.Tune,tr(R.string.ui_settings),Modifier.size(21.dp),tint=Muted)}
