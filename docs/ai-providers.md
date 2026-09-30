@@ -1,7 +1,5 @@
 # AI 渠道 / AI providers
 
-繁中與英文對照。以下是可複製的設定，不會自動替換你指定的模型。
-Examples are ready to copy. Echo never silently substitutes a different model.
 文件核對日期 / Documentation checked: 2026-10-01.
 
 ## 官方預設 / Official presets
@@ -47,8 +45,8 @@ AUDIO_AI_PROVIDER=auto
 AUDIO_AI_MODEL=gpt-audio-1.5
 ```
 
-文字模型與音訊模型分開；一般文字模型不一定能聽音訊。
-Text and audio use separate models; a general text model need not accept audio.
+文字分析與音訊分析使用不同模型；音訊模型須支援音訊輸入。
+Text and audio analysis use separate models; the audio model must support audio input.
 官方文件 / Official docs: [GPT-4.1 mini](https://developers.openai.com/api/docs/models/gpt-4.1-mini),
 [audio Chat Completions](https://developers.openai.com/api/docs/guides/audio-chat-completions).
 
@@ -121,8 +119,8 @@ AI_API_KEYS='["first-key","second-key","third-key"]'
   Duplicates are removed and requests rotate between keys. Authentication failures
   cool a key down for an hour, with at most three attempted keys per request.
   HTTP 429 pauses the pool according to Retry-After instead of exhausting keys.
-- 網路或模型錯誤不會靠換 key 解決；不會偷偷改用另一個付費模型。
-  Network/model failures do not trigger key cycling or silent model substitution.
+- 網路或模型錯誤不觸發 key 輪替，模型維持指定設定。
+  Network or model errors do not trigger key rotation or model substitution.
 
 檢查格式而不呼叫 AI / Validate without an AI request:
 
@@ -135,7 +133,7 @@ Only provider, model, key count and proxy status are printed; never the keys.
 
 ## 獨立音訊渠道 / Separate audio channel
 
-例如 DeepSeek 做行為分析、Gemini 聽音訊 / Example: DeepSeek for behavior, Gemini for audio:
+行為分析使用 DeepSeek、音訊分析使用 Gemini / DeepSeek for behavioral analysis, Gemini for audio analysis:
 
 ```dotenv
 AI_PROVIDER=deepseek

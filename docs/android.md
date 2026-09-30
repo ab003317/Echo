@@ -1,9 +1,9 @@
 # Android 建置 / Android builds
 
-一般使用者直接下載 [Releases APK](https://github.com/ab003317/Echo/releases/latest)。
-首次開啟輸入自己的伺服器，不內建開發者的伺服器或 AI key。
-Regular users can install the release APK and enter their own server.
-No developer server or AI keys are embedded.
+下載 [Release APK](https://github.com/ab003317/Echo/releases/latest)，
+首次開啟時輸入伺服器位址。AI key 設定於伺服器的 .env。
+Download the release APK and enter the server address on first launch.
+AI keys are configured in the server .env.
 
 ## 本機建置 / Local build
 
@@ -40,8 +40,5 @@ keyPassword=your-key-password
 Without signing.properties the release APK is unsigned. Keep your signing files:
 future updates to the same installed app require the same signing key.
 
-applicationId 保留歷史值 org.dddd010010.serein 以支援既有安裝升級；
-畫面名稱只有 Echo。切換伺服器會停止播放，不同伺服器的本機收藏與下載分開存放。
-The historical applicationId is retained for upgrade compatibility; the visible
-name is Echo. Switching servers stops playback and isolates local favorites and
-downloads by server.
+applicationId 為 `org.dddd010010.serein`，保留此值以維持既有安裝的升級相容性。
+The applicationId is `org.dddd010010.serein`, retained for upgrade compatibility.

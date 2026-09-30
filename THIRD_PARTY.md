@@ -1,7 +1,7 @@
 # 第三方元件 / Third-party components
 
-Echo 尚未指定專案授權。以下元件保留各自授權；此清單不取代依賴的完整授權文件。
-Echo has no project license yet. Dependencies retain their own licenses; this
+Echo 未指定專案授權。以下元件保留各自授權；此清單不取代依賴的完整授權文件。
+Echo has no project license. Dependencies retain their own licenses; this
 notice does not replace their full license texts.
 
 - Manrope font — SIL Open Font License 1.1.
@@ -24,6 +24,5 @@ notice does not replace their full license texts.
 - Caddy — Apache-2.0. [Source](https://github.com/caddyserver/caddy).
 - Gradle wrapper — Apache-2.0. [Source](https://github.com/gradle/gradle).
 
-Docker 在部署時從官方基礎映像及套件來源建置；本倉庫沒有打包私人音樂。
+Docker 在部署時從官方基礎映像及套件來源建置。
 Docker builds from official base images and package sources during deployment.
-This repository contains no private music.

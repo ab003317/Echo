@@ -2,7 +2,7 @@
 
 [繁體中文](../README.md) · [Download Android](https://github.com/ab003317/Echo/releases/latest) · [AI configuration](ai-providers.md)
 
-A private music server and Android player with background playback, offline music,
+Echo is a music server and Android player with background playback, offline music,
 daily discovery and recommendations informed by listening behavior.
 
 - Background and lock-screen playback, queue, shuffle, repeat and listening history.
@@ -10,19 +10,18 @@ daily discovery and recommendations informed by listening behavior.
   with a storage budget, manual retention and deletion.
 - A prepared discovery pool: heard tracks stay, frequently played tracks become
   permanent, and part of the unheard pool rotates daily.
-- Daily artist, series, style and random mixes. Save a mix to keep its edition.
+- Daily artist, series, style and random mixes. Saved mixes are retained.
   Style mixes require actual audio evidence.
 - AI uses listening time, repeats, completion and intentional skips.
   **Song titles are never treated as evidence of genre.**
 - Traditional Chinese and English in the app and deployment documentation.
 
-Each deployment shares one library, history and preference profile. It is intended
-for an individual or household with shared preferences, and has no separate user
-accounts or app access keys. Anyone who can reach the address can operate the
-instance. Use a private network or access control in your existing reverse proxy
-when needed.
+Each deployment shares one library, history and preference profile, with no
+separate user accounts or app access keys. Anyone who can reach the server can
+operate it. Access restrictions are configured through a private network or
+reverse proxy.
 
-## Quick start
+## Deployment
 
 Requirements: a Linux server or NAS, Docker Engine and Docker Compose v2.
 The app requires Android 8.0 or later.
@@ -42,9 +41,9 @@ AI_API_KEYS='["your-gemini-api-key"]'
 ```
 
 The default is Gemini `gemini-3.8-flash` for both behavioral and audio analysis.
-Replace the example key with your real key. Leaving keys as `[]` keeps the library,
-playback, offline downloads and non-AI recommendations available. AI requests
-consume your provider quota and may incur charges.
+Set `AI_API_KEYS` to valid API keys, or `[]` without keys. The library, playback,
+offline downloads and non-AI recommendations do not require API keys. AI requests
+consume provider quota and may incur charges.
 
 ```bash
 docker compose up -d --build
@@ -80,8 +79,8 @@ eligibility, not simply the model name. Check the [official sources](ai-provider
 
 AI analyzes the previous day's listening evidence daily. Audio analysis samples
 at most 12 tracks per day and up to 60 seconds per track. These clips are sent to
-your chosen provider. Set `AUDIO_AI_PROVIDER=none` to disable audio; behavioral
-analysis continues without inventing musical characteristics.
+the configured provider. Set `AUDIO_AI_PROVIDER=none` to disable audio analysis.
+Behavioral analysis remains available; genre classification requires audio findings.
 
 ## Data and maintenance
 
@@ -94,9 +93,8 @@ your YouTube Music account. Import only audio you have permission to use.
 See [deployment and maintenance](deployment.md) for updates, backups, restore, NAS
 permissions, cookies and proxy setup.
 
-No project license has been granted at this stage. Public source availability
-does not grant permission to modify or redistribute it. Third-party components
-retain their own licenses; see [THIRD_PARTY.md](../THIRD_PARTY.md).
+No project license is specified. Third-party components retain their own licenses;
+see [THIRD_PARTY.md](../THIRD_PARTY.md).
 
 ## Development
 

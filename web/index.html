@@ -10,8 +10,8 @@
 <main>
 <h1>Echo</h1>
 <nav aria-label="Language"><button onclick="choose('zh-Hant')">繁體中文</button><button onclick="choose('en')">English</button></nav>
-<section id="zh-Hant"><h2>你的音樂，由你的伺服器保存。</h2><p>在 Android 安裝 Echo，首次開啟時填入下方位址。音樂庫、播放記錄與每日歌單都會連上這台伺服器。</p><code class="address"></code><p><a href="https://github.com/ab003317/Echo/releases/latest">下載 Android App</a>　<a href="https://github.com/ab003317/Echo">部署與設定說明</a></p><small>AI 金鑰只填在伺服器的 .env，手機不需要輸入。這是共用一份音樂庫與偏好的私人實例，沒有獨立使用者帳戶。</small></section>
-<section id="en" hidden><h2>Your music lives on your server.</h2><p>Install Echo on Android and enter this address on first launch. Your library, listening history and daily mixes connect to this server.</p><code class="address"></code><p><a href="https://github.com/ab003317/Echo/releases/latest">Download Android app</a>　<a href="https://github.com/ab003317/Echo/blob/main/docs/README.en.md">Deployment guide</a></p><small>AI keys belong in the server .env only. This private instance shares one library and preference profile; it has no separate user accounts.</small></section>
+<section id="zh-Hant"><h2>連線設定</h2><p>安裝 Android App，首次開啟時填入下方伺服器位址。</p><code class="address"></code><p><a href="https://github.com/ab003317/Echo/releases/latest">下載 Android App</a>　<a href="https://github.com/ab003317/Echo">部署與設定說明</a></p><small>AI 金鑰填入伺服器的 .env。每個部署共用音樂庫與推薦偏好，沒有獨立使用者帳戶。</small></section>
+<section id="en" hidden><h2>Connection setup</h2><p>Install the Android app and enter the server address below on first launch.</p><code class="address"></code><p><a href="https://github.com/ab003317/Echo/releases/latest">Download Android app</a>　<a href="https://github.com/ab003317/Echo/blob/main/docs/README.en.md">Deployment guide</a></p><small>Set AI keys in the server .env. Each deployment shares a library and preference profile, with no separate user accounts.</small></section>
 </main>
 <script>
 document.querySelectorAll('.address').forEach(el=>el.textContent=location.origin+'/music');
