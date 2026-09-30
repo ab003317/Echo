@@ -2,6 +2,43 @@
 
 文件核對日期 / Documentation checked: 2026-10-01.
 
+[.env 逐項設定](configuration.md) · [.env field reference](configuration.en.md)
+
+<a id="api-access"></a>
+
+## API key 與模型的取得方式 / Obtain API keys and model IDs
+
+API key 是渠道簽發的程式呼叫憑證，填入 `AI_API_KEYS`，不是登入密碼。
+API URL 是接收請求的服務位址，填入 `AI_BASE_URL`；模型的 API ID 填入 `AI_MODEL`。
+Echo 的網域填在 `DOMAIN`，與這三項不同。
+
+An API key is a provider-issued credential for `AI_API_KEYS`, not a login password.
+The API service address goes in `AI_BASE_URL`, and the model's API ID in `AI_MODEL`.
+Echo's own hostname belongs in `DOMAIN`, separate from these AI settings.
+
+| 渠道 | 申請入口與步驟 | 模型 ID 與 API URL 取得位置 |
+| --- | --- | --- |
+| Gemini | 登入 [Google AI Studio 的 API Keys](https://aistudio.google.com/apikey)，建立或選擇專案後建立 API key，複製到 `AI_API_KEYS`。見 [Google key 文件](https://ai.google.dev/gemini-api/docs/api-key)。 | [Gemini 模型清單](https://ai.google.dev/gemini-api/docs/models)提供 API 模型名稱；使用官方服務時 `AI_BASE_URL` 留空。 |
+| OpenAI | 登入 [OpenAI Platform 的 API keys](https://platform.openai.com/api-keys)，在使用的專案內建立 API key，複製到 `AI_API_KEYS`。見 [OpenAI 官方入門文件](https://developers.openai.com/api/docs/quickstart)。 | [OpenAI 模型清單](https://developers.openai.com/api/docs/models)提供模型 ID 與支援介面；官方 `AI_BASE_URL` 可留空，或填 `https://api.openai.com/v1`。 |
+| DeepSeek | 登入 [DeepSeek Platform 的 API keys](https://platform.deepseek.com/api_keys)，建立 key 後複製到 `AI_API_KEYS`。 | [官方 API 文件](https://api-docs.deepseek.com/guides/harness)列出模型 ID 及端點；官方 `AI_BASE_URL` 可留空，或填 `https://api.deepseek.com`。 |
+| Qwen | 依 [Model Studio 的 key 申請步驟](https://www.alibabacloud.com/help/en/model-studio/get-api-key)登入控制台，選地區與工作空間，於 API Key 頁面建立 key。 | 使用同地區、同工作空間的 OpenAI 相容 Base URL，保留 `/compatible-mode/v1` 路徑，見下方 Qwen 範例。模型 ID 見 [Model Studio 模型清單](https://www.alibabacloud.com/help/en/model-studio/models)。`AI_BASE_URL` 必填，地區須與 key 一致。 |
+| custom | 從所用服務的 API key 管理頁取得，或向自架端點管理員索取。 | 向同一服務取得 OpenAI Chat Completions 相容根位址、模型 ID 與 key，三者必須相配；URL 與模型不能留空。 |
+
+| Provider | Key registration | Model ID and API URL source |
+| --- | --- | --- |
+| Gemini | Sign in to [Google AI Studio API Keys](https://aistudio.google.com/apikey), create/select a project, create a key and copy it to `AI_API_KEYS`. See [Google's key guide](https://ai.google.dev/gemini-api/docs/api-key). | Use API model names from the [Gemini model list](https://ai.google.dev/gemini-api/docs/models); leave `AI_BASE_URL` blank for the official service. |
+| OpenAI | Sign in to [OpenAI Platform API keys](https://platform.openai.com/api-keys), create a key in the intended project and copy it to `AI_API_KEYS`. See the [official OpenAI quickstart](https://developers.openai.com/api/docs/quickstart). | The [OpenAI model list](https://developers.openai.com/api/docs/models) provides IDs and supported interfaces. Leave the official URL blank or use `https://api.openai.com/v1`. |
+| DeepSeek | Sign in to [DeepSeek Platform API keys](https://platform.deepseek.com/api_keys), create a key and copy it to `AI_API_KEYS`. | The [official API guide](https://api-docs.deepseek.com/guides/harness) lists models and endpoints. Leave the official URL blank or use `https://api.deepseek.com`. |
+| Qwen | Follow [Model Studio key registration](https://www.alibabacloud.com/help/en/model-studio/get-api-key): select a region/workspace and create a key on its API Key page. | Use that region/workspace's OpenAI-compatible base URL, including `/compatible-mode/v1`, as in the Qwen example below. Obtain IDs from the [Model Studio model list](https://www.alibabacloud.com/help/en/model-studio/models). `AI_BASE_URL` is required, and its region must match the key. |
+| custom | Use the service's API key management page or ask the endpoint administrator. | Obtain a matching Chat Completions-compatible base URL, model ID and key from that service. URL and model are required. |
+
+建立 key 後，確認該帳戶／專案有可用額度及所選模型權限。可用模型與費用以渠道控制台為準。
+自訂、Qwen 與 OpenAI 模型須支援 Echo 使用的 Chat Completions 介面；音訊另需音訊輸入支援。
+
+After creating a key, check the account/project quota and model access in the provider console.
+Custom, Qwen and OpenAI models must support Echo's Chat Completions interface;
+audio additionally requires audio input support.
+
 ## 官方預設 / Official presets
 
 | AI_PROVIDER | 預設模型 / Default model | URL | 音訊 / Audio |
@@ -156,6 +193,8 @@ audio key pool explicitly.
 Audio requests use anonymous IDs with file tags removed, sampling up to three
 excerpts totaling 60 seconds per track. Titles, artists and albums are omitted.
 Model findings are hypotheses about the excerpts, not verified whole-track genres.
+
+<a id="network"></a>
 
 ## 網路、VPN與代理 / Network, VPN and proxy
 

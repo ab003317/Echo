@@ -1,5 +1,13 @@
 # 部署與維護 / Deployment and maintenance
 
+設定檔的每個欄位、用途與取得位置見 [.env 設定](configuration.md)。
+For every field's purpose, value and source, see [.env configuration](configuration.en.md).
+
+預設 HTTPS 部署須自備可管理 DNS 的網域或子網域。沒有網域時，請自行上網搜尋
+「免費網域申請指南」；此處不提供網域申請教學。
+The default HTTPS deployment requires a domain/subdomain with DNS control.
+Without one, search online for a free domain registration guide; registration is not covered here.
+
 ## 既有反向代理或 Tunnel / Existing reverse proxy or tunnel
 
 保留 .env 的 DOMAIN，設定 / Keep DOMAIN and set:
@@ -115,7 +123,16 @@ Avoid `docker compose down -v` unless you intend to delete volume data.
 TZ 決定每日分析與新歌池輪換的時區；預設 Asia/Hong_Kong。
 TZ controls daily analysis and pool-rotation boundaries; default: Asia/Hong_Kong.
 
+<a id="youtube-cookies"></a>
+
 ## YouTube cookies（可選） / Optional YouTube cookies
+
+cookies 是瀏覽器的登入資料。從自己的瀏覽器依
+[yt-dlp 官方匯出說明](https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp)
+取得 Netscape 格式檔案；無需登入的來源可不設定。
+Cookies contain browser session credentials. Export a Netscape-format file from
+your browser using the [official yt-dlp instructions](https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp).
+Leave this unset for sources that do not require login.
 
 部分來源會要求登入或封鎖資料中心 IP；下載並非任何網路都一定成功。
 如你有可用的 Netscape cookies 檔案，把它存為 `cookies.txt`，新增

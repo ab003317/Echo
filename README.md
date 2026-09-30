@@ -1,6 +1,6 @@
 # Echo
 
-[English](docs/README.en.md) · [Android 下載](https://github.com/ab003317/Echo/releases/latest) · [AI 渠道設定](docs/ai-providers.md)
+[English](docs/README.en.md) · [Android 下載](https://github.com/ab003317/Echo/releases/latest) · [.env 設定](docs/configuration.md) · [AI 渠道設定](docs/ai-providers.md)
 
 <img src="assets/brand/echo-icon.png" width="144" alt="Echo">
 
@@ -19,13 +19,15 @@ Echo 是音樂伺服器與 Android 播放器，支援背景播放、離線保存
 
 需要 Linux 私人伺服器／NAS、Docker Engine 和 Docker Compose v2。App 需要 Android 8.0 或以上。
 
+**以下 HTTPS 部署須自備可管理 DNS 的網域或子網域。** 沒有網域時，請自行上網搜尋「免費網域申請指南」；本專案不提供網域申請教學。
+
 ```bash
 git clone https://github.com/ab003317/Echo.git
 cd Echo
 cp .env.example .env
 ```
 
-編輯 `.env`，最少修改：
+`.env` 是伺服器設定檔，與 `compose.yaml` 放在同一個目錄。用文字編輯器開啟，修改以下項目：
 
 ```dotenv
 DOMAIN=music.example.com
@@ -33,14 +35,21 @@ MUSIC_PATH=/path/to/your/music
 AI_API_KEYS='["your-gemini-api-key"]'
 ```
 
+`DOMAIN` 填已設定的網域，`MUSIC_PATH` 填伺服器上的音樂資料夾路徑，`AI_API_KEYS` 填 AI 渠道簽發的 key。Gemini key 可在 [Google AI Studio](https://aistudio.google.com/apikey) 建立；其他渠道的[申請入口與步驟](docs/ai-providers.md#api-access)見 AI 指南。
+
+每個欄位的用途、預設值、必填條件、取得位置及範例見 [.env 逐項設定](docs/configuration.md)。不使用的可選欄位按指南保留預設或留空。
+
 預設使用 Gemini `gemini-3.8-flash`，同時支援行為與音訊分析。`AI_API_KEYS` 填入有效 API key，無 key 時填 `[]`。音樂庫、播放、離線保存及不依賴 AI 的推薦不需要 API key。AI 渠道會依用量計費或消耗額度。
 
+啟動前，網域 DNS 必須指向伺服器，TCP 80／443 必須可達。內建 Caddy 自動申請 HTTPS 憑證。已有服務佔用 80／443、使用 Tunnel 或只用內網時，請看[其他部署方式](docs/deployment.md)。
+
 ```bash
+docker compose config --quiet
 docker compose up -d --build
 docker compose exec echo python -m server.check_config
 ```
 
-把網域 DNS 指向伺服器，並讓 TCP 80／443 能連到它。內建 Caddy 自動申請 HTTPS 憑證。已有服務佔用 80／443、使用 Tunnel 或只用內網時，請看[其他部署方式](docs/deployment.md)。
+設定檢查會顯示 AI 渠道、模型與 key 數量，不會呼叫 AI 或驗證 key 額度。之後修改 `.env`，使用 `docker compose up -d` 套用。
 
 打開 `https://music.example.com/music`，下載 [Echo APK](https://github.com/ab003317/Echo/releases/latest)。App 首次開啟時填入相同位址；**手機只填伺服器位址，AI key 留在伺服器**。
 
@@ -58,7 +67,7 @@ docker compose exec echo python -m server.check_config
 | `AUDIO_AI_*` | 音訊分析另選渠道、模型、URL 與 key |
 | `YOUTUBE_PROXY_URL` | YouTube 的獨立代理 |
 
-是否需要 VPN／代理取決於**伺服器網路、渠道服務地區與帳戶資格**，不是某個模型名稱的固定屬性。請核對[渠道文件與支援地區](docs/ai-providers.md#網路vpn與代理--network-vpn-and-proxy)。
+是否需要 VPN／代理取決於**伺服器網路、渠道服務地區與帳戶資格**，不是某個模型名稱的固定屬性。請核對[渠道文件與支援地區](docs/ai-providers.md#network)。
 
 AI 預設每日分析前一日聆聽資料，音訊每天最多抽樣 12 首，每首最多 60 秒。音訊會傳往指定渠道；`AUDIO_AI_PROVIDER=none` 可關閉音訊分析。關閉後仍可分析聆聽行為，曲風分類則需要音訊分析結果。
 

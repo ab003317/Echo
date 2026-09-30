@@ -1,6 +1,6 @@
 # Echo
 
-[繁體中文](../README.md) · [Download Android](https://github.com/ab003317/Echo/releases/latest) · [AI configuration](ai-providers.md)
+[繁體中文](../README.md) · [Download Android](https://github.com/ab003317/Echo/releases/latest) · [.env configuration](configuration.en.md) · [AI providers](ai-providers.md)
 
 Echo is a music server and Android player with background playback, offline music,
 daily discovery and recommendations informed by listening behavior.
@@ -26,13 +26,18 @@ reverse proxy.
 Requirements: a Linux server or NAS, Docker Engine and Docker Compose v2.
 The app requires Android 8.0 or later.
 
+**The HTTPS deployment below requires a domain or subdomain with DNS control.**
+Without a domain, search online for a free domain registration guide.
+Domain registration is not covered by this project.
+
 ```bash
 git clone https://github.com/ab003317/Echo.git
 cd Echo
 cp .env.example .env
 ```
 
-Edit at least these values:
+`.env` is the server configuration file, stored beside `compose.yaml`.
+Open it in a text editor and change these values:
 
 ```dotenv
 DOMAIN=music.example.com
@@ -40,19 +45,32 @@ MUSIC_PATH=/path/to/your/music
 AI_API_KEYS='["your-gemini-api-key"]'
 ```
 
+Set `DOMAIN` to the configured hostname, `MUSIC_PATH` to the server's music
+directory, and `AI_API_KEYS` to provider-issued keys. Create Gemini keys in
+[Google AI Studio](https://aistudio.google.com/apikey); see [registration portals
+and steps](ai-providers.md#api-access) for other providers.
+
+The [.env field reference](configuration.en.md) explains every setting's purpose,
+default, requirements, source and examples. Keep defaults or leave optional fields
+blank according to that guide.
+
 The default is Gemini `gemini-3.8-flash` for both behavioral and audio analysis.
 Set `AI_API_KEYS` to valid API keys, or `[]` without keys. The library, playback,
 offline downloads and non-AI recommendations do not require API keys. AI requests
 consume provider quota and may incur charges.
 
+Before starting, point DNS at the server and allow inbound TCP ports 80 and 443. Included Caddy
+obtains HTTPS certificates automatically. For an existing proxy, tunnel, occupied
+ports or LAN-only access, use the [deployment guide](deployment.md).
+
 ```bash
+docker compose config --quiet
 docker compose up -d --build
 docker compose exec echo python -m server.check_config
 ```
 
-Point DNS at the server and allow inbound TCP ports 80 and 443. Included Caddy
-obtains HTTPS certificates automatically. For an existing proxy, tunnel, occupied
-ports or LAN-only access, use the [deployment guide](deployment.md).
+Configuration checks report providers, models and key counts without calling AI
+or verifying key quota. Apply later `.env` changes with `docker compose up -d`.
 
 Open `https://music.example.com/music`, install the [APK](https://github.com/ab003317/Echo/releases/latest),
 and enter that address on first launch. **The phone needs only the server address;
