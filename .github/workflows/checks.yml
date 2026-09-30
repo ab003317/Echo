@@ -33,6 +33,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      - uses: android-actions/setup-android@v3
       - name: 安裝 SDK / Install SDK
         run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
       - name: 建置與檢查 / Build and check
