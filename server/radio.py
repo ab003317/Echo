@@ -154,7 +154,7 @@ class Radio:
                 'status': self.get('status', '正在准备新歌'), 'lastRotation': self.get('rotation', ''),
                 'analysis': {'day': self.get('analysisDay', ''), 'at': self.get('analysisAt', 0),
                              'summary': profile.get('summary', ''), 'focus': profile.get('focus', []),
-                             'model': self.get('model', ''), 'report': detail, 'status': self.get('aiStatus', '等待分析')}}
+                             'model': self.get('model', ''), 'report': detail, 'status': self.get('aiStatus', '等待分析') if AIConfig.from_env().enabled else 'AI 尚未啟用 / AI not configured'}}
 
     def evidence(self, day):
         start = datetime.fromisoformat(day).replace(tzinfo=HK).timestamp()
