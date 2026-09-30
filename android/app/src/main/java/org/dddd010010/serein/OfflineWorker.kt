@@ -9,9 +9,10 @@ import kotlinx.coroutines.withContext
 import okhttp3.Dns
 import java.io.File
 import java.util.concurrent.TimeUnit
+import kotlin.concurrent.read
 
 class OfflineWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {
-    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+    override suspend fun doWork(): Result = withContext(Dispatchers.IO) { Library.serverLock.read {
         if(Library.base.isBlank() || Library.downloadPaused) return@withContext Result.success()
         val serverProfile=Library.profile
         val cm = applicationContext.getSystemService(ConnectivityManager::class.java)
@@ -103,7 +104,7 @@ class OfflineWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ct
             if(e is DownloadFailure)Library.setStatus(e.id,*e.arguments) else Library.setStatus(R.string.ui_connection_lost_waiting_for_the_next_wi_fi_sync)
             Result.retry()
         } finally { Library.refreshFiles();Library.activeDownload=""; Library.downloadBytes=0; Library.downloadTotal=0 }
-    }
+    } }
     companion object {
         private val constraints = Constraints.Builder().setRequiredNetworkType(NetworkType.UNMETERED).setRequiresStorageNotLow(true).build()
         fun schedule(ctx: Context) {

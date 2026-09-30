@@ -24,6 +24,8 @@ import org.json.JSONObject
 import java.io.File
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.write
 
 data class Song(val id: String, val title: String, val artist: String, val album: String,
                 val duration: Double, val size: Long, val mtime: Double, val hasCover: Boolean, val pool:String="") {
@@ -303,17 +305,17 @@ object Library {
                 JSONObject(it.body!!.string()).optString("instanceId").takeIf { id->id.matches(Regex("[a-fA-F0-9-]{36}")) }
             }
         }.getOrNull() ?: normalized
-        synchronized(syncLock) {
+        serverLock.write { synchronized(syncLock) {
             val mapping="server_"+java.security.MessageDigest.getInstance("SHA-256").digest(identity.toByteArray()).joinToString(""){"%02x".format(it)}
             val legacy=prefs.getString("base","").orEmpty()
-            val selected=connections.getString(mapping,null) ?: if(profile=="library" && (legacy==normalized || (legacy.isEmpty() && songs.isNotEmpty())))"library" else mapping
+            val selected=connections.getString(mapping,null) ?: if(profile=="library" && legacy==normalized)"library" else mapping
             connections.edit().putString(mapping,selected).putString("profile",selected).commit()
             downloads.mkdirs()
             prefs.edit().putString("base",normalized).commit()
             merge(tracks)
             scanFiles()
             changed()
-        }
+        } }
         OfflineWorker.kick(context)
     }
     @Synchronized fun renamePlaylist(old: String, name: String) {
@@ -351,6 +353,7 @@ object Library {
         save("recommendations", JSONArray(ordered))
         runCatching{acceptMixFeed(api("mixes",client=client))}
     }
+    internal val serverLock=ReentrantReadWriteLock()
     private val syncLock = Any()
     fun flush(client: OkHttpClient = http) = synchronized(syncLock) {
         val playback=obj("playbackOutbox")
