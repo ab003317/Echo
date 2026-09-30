@@ -1,0 +1,7 @@
+**
+!server/
+!server/*.py
+!server/requirements.lock
+!web/
+!web/**
+server/test_*.py

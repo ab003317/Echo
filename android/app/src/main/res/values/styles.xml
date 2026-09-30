@@ -1,0 +1,9 @@
+<resources>
+    <style name="Theme.Serein" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#08090B</item>
+        <item name="android:colorAccent">#F5F5F2</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:statusBarColor">#08090B</item>
+        <item name="android:navigationBarColor">#08090B</item>
+    </style>
+</resources>

@@ -1,0 +1,41 @@
+name: echo
+services:
+  echo:
+    build: .
+    image: echo:local
+    restart: unless-stopped
+    init: true
+    env_file: .env
+    environment:
+      SEREIN_MUSIC_ROOT: /music
+      SEREIN_DATA_DIR: /data
+    volumes:
+      - ${MUSIC_PATH:-./music}:/music
+      - echo_data:/data
+    # 現有反向代理可連 localhost:18082 / Existing proxies can use localhost:18082.
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${HTTP_PORT:-18082}:18082"
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    stop_grace_period: 30s
+  https:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    profiles: [https]
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      echo:
+        condition: service_healthy
+volumes:
+  echo_data:
+  caddy_data:
+  caddy_config:

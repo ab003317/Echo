@@ -1,0 +1,7 @@
+<resources>
+    <string name="setup_title">Connect your music</string>
+    <string name="setup_description">Enter your deployed Echo server address to connect your library, daily mixes and listening history.</string>
+    <string name="setup_address_hint">Enter a domain or full address; /music is added automatically. Local networks may use http://host:18082.</string>
+    <string name="setup_connection_failed">Could not connect to Echo. Check the address, server status and phone network, then retry.</string>
+    <string name="setup_switch_hint">Switching servers stops playback. Favorites, playlists and offline songs are stored separately for each server.</string>
+</resources>

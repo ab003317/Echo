@@ -1,0 +1,7 @@
+<resources>
+    <string name="setup_title">連接你的音樂</string>
+    <string name="setup_description">填入已部署的 Echo 伺服器位址。你的音樂庫、每日歌單與聆聽記錄會在這裡接上。</string>
+    <string name="setup_address_hint">可填網域或完整位址；會自動補上 /music。區域網路可使用 http://主機位址:18082。</string>
+    <string name="setup_connection_failed">無法連上 Echo。請檢查位址、伺服器狀態及手機網路後重試。</string>
+    <string name="setup_switch_hint">切換不同伺服器會停止播放；各伺服器的收藏、歌單和離線歌曲分開保存。</string>
+</resources>

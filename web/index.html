@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="zh-Hant">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Echo</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#101116;color:#f5f3ef;font:16px/1.7 system-ui,sans-serif}main{max-width:700px;margin:8vh auto;padding:32px 24px}h1{font-size:64px;letter-spacing:-3px;margin:0}h2{font-size:24px;font-weight:500}p{color:#b9bdc8}a{color:#c9b18b}code{display:block;padding:16px;background:#1b1e27;border-radius:8px;overflow-wrap:anywhere}nav{display:flex;gap:20px;margin:32px 0}button{font:inherit;color:inherit;background:transparent;border:1px solid #666a76;border-radius:6px;padding:8px 14px;cursor:pointer}button:focus-visible,a:focus-visible{outline:2px solid #c9b18b;outline-offset:4px}small{color:#b9bdc8}section[hidden]{display:none}
+</style>
+<main>
+<h1>Echo</h1>
+<nav aria-label="Language"><button onclick="choose('zh-Hant')">繁體中文</button><button onclick="choose('en')">English</button></nav>
+<section id="zh-Hant"><h2>你的音樂，由你的伺服器保存。</h2><p>在 Android 安裝 Echo，首次開啟時填入下方位址。音樂庫、播放記錄與每日歌單都會連上這台伺服器。</p><code class="address"></code><p><a href="https://github.com/ab003317/Echo/releases/latest">下載 Android App</a>　<a href="https://github.com/ab003317/Echo">部署與設定說明</a></p><small>AI 金鑰只填在伺服器的 .env，手機不需要輸入。這是共用一份音樂庫與偏好的私人實例，沒有獨立使用者帳戶。</small></section>
+<section id="en" hidden><h2>Your music lives on your server.</h2><p>Install Echo on Android and enter this address on first launch. Your library, listening history and daily mixes connect to this server.</p><code class="address"></code><p><a href="https://github.com/ab003317/Echo/releases/latest">Download Android app</a>　<a href="https://github.com/ab003317/Echo/blob/main/docs/README.en.md">Deployment guide</a></p><small>AI keys belong in the server .env only. This private instance shares one library and preference profile; it has no separate user accounts.</small></section>
+</main>
+<script>
+document.querySelectorAll('.address').forEach(el=>el.textContent=location.origin+'/music');
+function choose(lang){document.documentElement.lang=lang;for(const id of ['zh-Hant','en'])document.getElementById(id).hidden=id!==lang}
+if(navigator.language.startsWith('en'))choose('en');
+</script>
+</html>

@@ -1,0 +1,4 @@
+<network-security-config>
+    <!-- 私人網路主機由使用者指定 / Users choose their private network host. -->
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>
