@@ -31,7 +31,7 @@
     <string name="follow_search">Search artist names</string>
     <string name="follow_identity_hint">Select an Apple Music catalogue region and confirm the artist to follow</string>
     <string name="follow_not_found">No matching artists. Try another region or name</string>
-    <string name="queue_drag_hint">Hold the left handle and drag to reorder</string>
+    <string name="queue_drag_hint">Hold the handle on the right and drag to reorder</string>
     <string name="queue_reorder">Reorder %1$s</string>
     <string name="queue_move_up">Move up</string>
     <string name="queue_move_down">Move down</string>

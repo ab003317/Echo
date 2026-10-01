@@ -316,4 +316,12 @@
     <string name="language_label">語言</string>
     <string name="analysis_summary_unavailable">這份舊摘要暫時無法顯示，既有聆聽偏好仍會繼續用於推薦。</string>
     <string name="request_failed">暫時未能完成，請稍後重試。</string>
+    <string name="ui_up_next">接下來</string>
+    <string name="ui_end_of_queue">已是佇列最後一首</string>
+    <string name="ui_shuffle_short">隨機</string>
+    <string name="ui_shuffle_all">隨機播放全部</string>
+    <string name="history_pill_finished">聽完</string>
+    <string name="history_pill_skipped">跳過</string>
+    <string name="history_pill_interrupted">中斷</string>
+    <string name="history_pill_partial">已聽</string>
 </resources>

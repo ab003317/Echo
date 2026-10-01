@@ -16,12 +16,12 @@ Echo 是音樂伺服器與 Android 播放器，支援背景播放、離線保存
 
 ## App 畫面
 
-Echo 0.9.2 實際畫面，使用示範音樂庫。點擊圖片可查看完整尺寸。
+Echo 0.10.0 實際畫面，使用示範音樂庫。頁面背景取自目前封面的顏色。點擊圖片可查看完整尺寸。
 
 | 首頁與每日歌單 | 播放器 | 播放佇列 |
 | --- | --- | --- |
-| [<img src="docs/screenshots/zh-Hant/home.png" width="230" alt="Echo 首頁：推薦歌曲與流動歌單">](docs/screenshots/zh-Hant/home.png) | [<img src="docs/screenshots/zh-Hant/player.png" width="230" alt="Echo 播放器：封面、進度、循環與睡眠定時">](docs/screenshots/zh-Hant/player.png) | [<img src="docs/screenshots/zh-Hant/queue.png" width="230" alt="Echo 播放佇列：拖曳排序與曲目選單">](docs/screenshots/zh-Hant/queue.png) |
-| 推薦歌曲與每日輪換的歌單集中在首頁；喜歡的歌單可永久保存。 | 調整播放進度、隨機與循環模式，加入最愛或設定睡眠定時；支援背景播放。 | 長按拖曳調整順序，透過曲目選單移除歌曲；標示目前播放的曲目。 |
+| [<img src="docs/screenshots/zh-Hant/home.png" width="230" alt="Echo 首頁：推薦歌曲與流動歌單">](docs/screenshots/zh-Hant/home.png) | [<img src="docs/screenshots/zh-Hant/player.png" width="230" alt="Echo 播放器：封面、進度、循環、睡眠定時與下一首">](docs/screenshots/zh-Hant/player.png) | [<img src="docs/screenshots/zh-Hant/queue.png" width="230" alt="Echo 播放佇列：拖曳排序與曲目選單">](docs/screenshots/zh-Hant/queue.png) |
+| 推薦歌曲與每日輪換的歌單集中在首頁；喜歡的歌單可永久保存。 | 調整播放進度、隨機與循環模式，加入最愛或設定睡眠定時；底部預覽下一首，點擊打開佇列。支援背景播放。 | 長按右側拖曳柄調整順序，透過曲目選單移除歌曲；可直接切換隨機與循環。 |
 
 | 發現下一首 | 榜單 | 離線保存 |
 | --- | --- | --- |

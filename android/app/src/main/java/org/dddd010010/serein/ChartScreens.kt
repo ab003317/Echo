@@ -4,7 +4,9 @@ package org.dddd010010.serein
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.shadow
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
@@ -88,30 +90,28 @@ private fun regionLabel(id:String)=when(id){"global"->tr(R.string.chart_global);
     LaunchedEffect(section,model.provider,model.region,model.days){state.scrollToItem(0)}
     Column(Modifier.fillMaxSize()){
         if(section=="charts"){
-            LazyRow(contentPadding=PaddingValues(horizontal=24.dp),horizontalArrangement=Arrangement.spacedBy(8.dp)){
-                items(listOf("youtube" to "YouTube", "apple" to "Apple Music", "echo" to "Echo")){(id,label)->FilterChip(model.provider==id,{model.select(provider=id)},label={Text(label)})}
+            Segmented(listOf("youtube" to "YouTube","apple" to "Apple Music","echo" to "Echo"),model.provider,{model.select(provider=it)},Modifier.padding(horizontal=20.dp,vertical=4.dp))
+            LazyRow(contentPadding=PaddingValues(horizontal=10.dp)){
+                if(model.provider=="echo")items(listOf(7,30,0)){days->ScopeTab(when(days){7->tr(R.string.chart_week);30->tr(R.string.chart_month);else->tr(R.string.chart_all_time)},model.days==days){model.select(days=days)}}
+                else items(if(model.provider=="youtube")listOf("global","hk","tw","jp") else listOf("hk","tw","jp")){region->ScopeTab(regionLabel(region),model.region==region){model.select(region=region)}}
             }
-            LazyRow(contentPadding=PaddingValues(horizontal=24.dp),horizontalArrangement=Arrangement.spacedBy(6.dp)){
-                if(model.provider=="echo")items(listOf(7,30,0)){days->TextButton(onClick={model.select(days=days)}){Text(when(days){7->tr(R.string.chart_week);30->tr(R.string.chart_month);else->tr(R.string.chart_all_time)},color=if(model.days==days)TextBright else Muted)}}
-                else items(if(model.provider=="youtube")listOf("global","hk","tw","jp") else listOf("hk","tw","jp")){region->TextButton(onClick={model.select(region=region)}){Text(regionLabel(region),color=if(model.region==region)TextBright else Muted)}}
-            }
-        }else Row(Modifier.fillMaxWidth().padding(start=24.dp,end=12.dp),verticalAlignment=Alignment.CenterVertically){
-            Text(tr(R.string.release_order),fontSize=12.sp,color=Muted,modifier=Modifier.weight(1f))
-            TextButton(onClick={follows=true}){Icon(Icons.Rounded.PersonAdd,null,Modifier.size(17.dp));Spacer(Modifier.width(6.dp));Text(tr(R.string.follow_artists))}
+        }else Row(Modifier.fillMaxWidth().padding(start=20.dp,end=16.dp,top=2.dp,bottom=4.dp),verticalAlignment=Alignment.CenterVertically){
+            Text(tr(R.string.release_order),fontSize=12.sp,color=Secondary,modifier=Modifier.weight(1f).padding(end=10.dp))
+            SecondaryPill(tr(R.string.follow_artists),{follows=true},icon=Icons.Rounded.PersonAdd,height=36.dp)
         }
         PullToRefreshBox(model.loading,{model.load(refresh=true)},Modifier.weight(1f)){
             LazyColumn(state=state,modifier=Modifier.fillMaxSize(),contentPadding=PaddingValues(bottom=28.dp)){
                 item{
-                    Column(Modifier.padding(horizontal=24.dp,vertical=12.dp)){
-                        Text(when{section=="releases"->tr(R.string.release_source);model.provider=="youtube"->tr(R.string.chart_youtube_title);model.provider=="apple"->tr(R.string.chart_apple_title);else->tr(R.string.chart_echo_title)},fontFamily=EchoTitleFont,fontSize=20.sp,fontWeight=FontWeight.Medium)
+                    Column(Modifier.padding(start=20.dp,end=20.dp,top=8.dp,bottom=8.dp)){
+                        Text(when{section=="releases"->tr(R.string.release_source);model.provider=="youtube"->tr(R.string.chart_youtube_title);model.provider=="apple"->tr(R.string.chart_apple_title);else->tr(R.string.chart_echo_title)},fontFamily=EchoTitleFont,fontSize=20.sp,fontWeight=FontWeight.Bold)
                         val period=data.optString("period")
-                        Text(when{section=="releases"->tr(R.string.release_follow_count,following.size);model.provider=="echo"->tr(R.string.chart_echo_basis);period.isNotBlank()->tr(R.string.chart_source_date,period.take(10));else->tr(R.string.chart_waiting)},fontSize=12.sp,lineHeight=18.sp,color=Muted,modifier=Modifier.padding(top=6.dp))
-                        if(data.optBoolean("loading"))LinearProgressIndicator(Modifier.fillMaxWidth().padding(top=12.dp).height(2.dp))
-                        if(data.optBoolean("stale") && rows.isNotEmpty() || data.optJSONArray("errors")?.length()?.let{it>0}==true)Text(tr(R.string.catalog_cached),fontSize=12.sp,color=Muted,modifier=Modifier.padding(top=8.dp))
-                        if(model.error.isNotBlank() || data.optString("error").isNotBlank())Text(tr(R.string.catalog_connection_error),fontSize=12.sp,color=Muted,modifier=Modifier.padding(top=8.dp))
+                        Text(when{section=="releases"->tr(R.string.release_follow_count,following.size);model.provider=="echo"->tr(R.string.chart_echo_basis);period.isNotBlank()->tr(R.string.chart_source_date,period.take(10));else->tr(R.string.chart_waiting)},fontSize=12.sp,lineHeight=18.sp,fontWeight=FontWeight.SemiBold,color=TextBright.copy(alpha=.5f),modifier=Modifier.padding(top=3.dp))
+                        if(data.optBoolean("loading"))LinearProgressIndicator(Modifier.fillMaxWidth().padding(top=12.dp).height(2.dp),color=TextBright,trackColor=Glass)
+                        if(data.optBoolean("stale") && rows.isNotEmpty() || data.optJSONArray("errors")?.length()?.let{it>0}==true)Text(tr(R.string.catalog_cached),fontSize=12.sp,color=Secondary,modifier=Modifier.padding(top=8.dp))
+                        if(model.error.isNotBlank() || data.optString("error").isNotBlank())Text(tr(R.string.catalog_connection_error),fontSize=12.sp,color=Secondary,modifier=Modifier.padding(top=8.dp))
                     }
                 }
-                items(rows,key={it.getString("id")}){row->
+                itemsIndexed(rows,key={_,row->row.getString("id")}){index,row->
                     val song=row.optJSONObject("song")?.let{Song.from(it)}
                     val video=row.optString("video")
                     val importState=if(video.isNotBlank())discovery.state(video) else ""
@@ -123,7 +123,8 @@ private fun regionLabel(id:String)=when(id){"global"->tr(R.string.chart_global);
                             else->search(row.optString("artist")+" "+row.optString("title"))
                         }
                     }
-                    ChartRow(row,song,section=="charts",importState,action)
+                    if(index==0 && section=="charts" && row.optInt("rank")==1)ChartLeader(row,song,importState,action)
+                    else ChartRow(row,song,section=="charts",importState,action)
                 }
                 if(rows.isEmpty() && !model.loading && !data.optBoolean("loading"))item{
                     if(section=="releases" && following.isEmpty())EmptyState(tr(R.string.follow_artists),tr(R.string.release_empty),tr(R.string.follow_add)){follows=true}
@@ -137,28 +138,56 @@ private fun regionLabel(id:String)=when(id){"global"->tr(R.string.chart_global);
     if(follows)FullSheet({follows=false;model.load()}){dismiss->ArtistFollowsScreen({dismiss();model.load()},message)}
 }
 
+@Composable private fun ScopeTab(label:String,selected:Boolean,click:()->Unit){
+    TextButton(onClick=click){Text(label,fontSize=14.sp,fontWeight=if(selected)FontWeight.ExtraBold else FontWeight.SemiBold,color=if(selected)TextBright else TextBright.copy(alpha=.5f))}
+}
+
+@Composable private fun ChartCover(row:JSONObject,song:Song?,size:Int,radius:Int){
+    if(song!=null)Artwork(song,Modifier.size(size.dp),radius)
+    else {
+        val cover=row.optString("cover")
+        var failed by remember(cover){mutableStateOf(false)}
+        val record=rememberRecordArtwork(row.optString("artist")+row.optString("title"),cover.isBlank() || failed)
+        AsyncImage(cover,null,Modifier.size(size.dp).clip(RoundedCornerShape(radius.dp)).background(Raised),placeholder=record,error=record,fallback=record,contentScale=ContentScale.Crop,onError={failed=true},onSuccess={failed=false})
+    }
+}
+
+@Composable private fun ChartAction(row:JSONObject,song:Song?,state:String,action:()->Unit,lead:Boolean=false){
+    val busy=state in listOf("queued","downloading")
+    val icon=when{song!=null || state=="complete"->Icons.Rounded.PlayArrow;row.optString("video").isNotBlank()->Icons.Rounded.Download;else->Icons.Rounded.Search}
+    val label=when{song!=null || state=="complete"->tr(R.string.ui_play);row.optString("video").isNotBlank()->tr(R.string.catalog_prepare_play);else->tr(R.string.catalog_find_audio)}
+    if(lead)GlassButton(action,size=46.dp,enabled=!busy,fill=TextBright){if(busy)CircularProgressIndicator(Modifier.size(18.dp),color=Night,strokeWidth=2.dp) else Icon(icon,label,Modifier.size(24.dp),tint=Night)}
+    else IconButton(onClick=action,enabled=!busy){if(busy)CircularProgressIndicator(Modifier.size(18.dp),color=TextBright,strokeWidth=2.dp) else Icon(icon,label,Modifier.size(20.dp),tint=TextBright.copy(alpha=.75f))}
+}
+
+/** The number one entry gets its own card so the chart reads as a ranking rather than a list. */
+@Composable private fun ChartLeader(row:JSONObject,song:Song?,state:String,action:()->Unit){
+    val shape=RoundedCornerShape(20.dp)
+    Row(Modifier.padding(horizontal=16.dp,vertical=6.dp).fillMaxWidth().clip(shape).background(Glass).border(1.dp,Hairline,shape).clickable(enabled=state!in listOf("queued","downloading"),onClick=action).padding(14.dp),verticalAlignment=Alignment.CenterVertically){
+        Box(Modifier.shadow(12.dp,RoundedCornerShape(12.dp))){ChartCover(row,song,92,12)}
+        Column(Modifier.weight(1f).padding(horizontal=14.dp)){
+            Text("1",fontFamily=SereinFont,fontSize=44.sp,lineHeight=44.sp,fontWeight=FontWeight.ExtraBold,letterSpacing=(-1).sp)
+            Text(row.optString("title"),fontSize=17.sp,fontWeight=FontWeight.ExtraBold,maxLines=2,overflow=TextOverflow.Ellipsis,lineHeight=22.sp,modifier=Modifier.padding(top=4.dp))
+            Text(row.optString("artist"),fontSize=13.sp,color=Secondary,maxLines=1,overflow=TextOverflow.Ellipsis)
+            if(row.has("playCount"))Text(tr(R.string.ui_plays,row.optInt("playCount")),fontSize=12.sp,color=TextBright.copy(alpha=.5f))
+        }
+        ChartAction(row,song,state,action,lead=true)
+    }
+}
+
 @Composable private fun ChartRow(row:JSONObject,song:Song?,ranked:Boolean,state:String,action:()->Unit){
     val busy=state in listOf("queued","downloading")
-    Row(Modifier.fillMaxWidth().clickable(enabled=!busy,onClick=action).padding(start=24.dp,end=12.dp,top=10.dp,bottom=10.dp),verticalAlignment=Alignment.CenterVertically){
-        if(ranked)Text(row.optInt("rank").toString(),fontFamily=EchoLatinTitle,fontSize=19.sp,color=Muted,modifier=Modifier.width(34.dp))
-        if(song!=null)Artwork(song,Modifier.size(48.dp),5)
-        else {
-            val cover=row.optString("cover")
-            var failed by remember(cover){mutableStateOf(false)}
-            val record=rememberRecordArtwork(row.optString("artist")+row.optString("title"),cover.isBlank() || failed)
-            AsyncImage(cover,null,Modifier.size(48.dp).clip(RoundedCornerShape(5.dp)).background(Panel),placeholder=record,error=record,fallback=record,contentScale=ContentScale.Crop,onError={failed=true},onSuccess={failed=false})
-        }
-        Column(Modifier.weight(1f).padding(start=13.dp,end=4.dp)){
-            Text(row.optString("title"),fontSize=15.sp,fontWeight=FontWeight.Medium,maxLines=2,overflow=TextOverflow.Ellipsis,lineHeight=20.sp)
-            Text(row.optString("artist"),fontSize=12.sp,color=Muted,maxLines=1,overflow=TextOverflow.Ellipsis,modifier=Modifier.padding(top=4.dp))
+    val rank=row.optInt("rank")
+    Row(Modifier.fillMaxWidth().clickable(enabled=!busy,onClick=action).padding(start=22.dp,end=8.dp,top=8.dp,bottom=8.dp),verticalAlignment=Alignment.CenterVertically){
+        if(ranked)Text(rank.toString(),fontFamily=SereinFont,fontSize=18.sp,fontWeight=FontWeight.ExtraBold,color=if(rank<=3)TextBright else TextBright.copy(alpha=.5f),modifier=Modifier.width(34.dp),style=TabularNumbers)
+        ChartCover(row,song,46,8)
+        Column(Modifier.weight(1f).padding(start=14.dp,end=4.dp)){
+            Text(row.optString("title"),fontSize=15.sp,fontWeight=FontWeight.Bold,maxLines=1,overflow=TextOverflow.Ellipsis)
+            Text(row.optString("artist"),fontSize=13.sp,color=Secondary,maxLines=1,overflow=TextOverflow.Ellipsis)
             val detail=when{busy->tr(R.string.ui_adding);row.has("playCount")->tr(R.string.ui_plays,row.optInt("playCount"));!ranked->row.optString("releaseDate");else->""}
-            if(detail.isNotBlank())Text(detail,fontSize=11.sp,color=Muted,modifier=Modifier.padding(top=4.dp))
+            if(detail.isNotBlank())Text(detail,fontSize=12.sp,color=TextBright.copy(alpha=.5f),modifier=Modifier.padding(top=1.dp))
         }
-        IconButton(onClick=action,enabled=!busy){
-            if(busy)CircularProgressIndicator(Modifier.size(18.dp),strokeWidth=2.dp)
-            else Icon(when{song!=null || state=="complete"->Icons.Rounded.PlayArrow;row.optString("video").isNotBlank()->Icons.Rounded.Download;else->Icons.Rounded.Search},
-                when{song!=null || state=="complete"->tr(R.string.ui_play);row.optString("video").isNotBlank()->tr(R.string.catalog_prepare_play);else->tr(R.string.catalog_find_audio)},Modifier.size(21.dp),tint=Muted)
-        }
+        ChartAction(row,song,state,action)
     }
 }
 
@@ -177,8 +206,8 @@ private fun regionLabel(id:String)=when(id){"global"->tr(R.string.chart_global);
     LaunchedEffect(Unit){try{followed=Library.apiAsync("artists").getJSONArray("artists").objects()}catch(e:CancellationException){throw e}catch(_:Exception){error=tr(R.string.catalog_connection_error)}}
     Column{SheetTitle(tr(R.string.follow_artists),close)
         SearchBox(query,{query=it},tr(R.string.follow_search),submit={search()},clear={query="";results=emptyList();job?.cancel();loading=false})
-        LazyRow(contentPadding=PaddingValues(horizontal=24.dp)){items(listOf("hk","tw","jp")){id->TextButton(onClick={country=id;results=emptyList();search()}){Text(regionLabel(id),color=if(country==id)TextBright else Muted)}}}
-        Text(tr(R.string.follow_identity_hint),fontSize=12.sp,lineHeight=18.sp,color=Muted,modifier=Modifier.padding(horizontal=24.dp,vertical=8.dp))
+        LazyRow(contentPadding=PaddingValues(horizontal=20.dp,vertical=6.dp),horizontalArrangement=Arrangement.spacedBy(8.dp)){items(listOf("hk","tw","jp")){id->LineTab(regionLabel(id),country==id){country=id;results=emptyList();search()}}}
+        Text(tr(R.string.follow_identity_hint),fontSize=12.sp,lineHeight=18.sp,color=Secondary,modifier=Modifier.padding(horizontal=20.dp,vertical=8.dp))
         if(loading)LinearProgressIndicator(Modifier.fillMaxWidth().padding(horizontal=24.dp).height(2.dp))
         if(error.isNotBlank())Text(error,fontSize=12.sp,color=Muted,modifier=Modifier.padding(24.dp))
         LazyColumn(Modifier.fillMaxWidth().weight(1f,false),contentPadding=PaddingValues(bottom=24.dp)){
@@ -186,13 +215,13 @@ private fun regionLabel(id:String)=when(id){"global"->tr(R.string.chart_global);
             items(shown,key={it.getString("id")+it.getString("country")}){artist->
                 val id=artist.getString("id");val market=artist.getString("country");val key=id+market
                 val active=followed.any{it.optString("id")==id && it.optString("country")==market}
-                Row(Modifier.fillMaxWidth().padding(start=24.dp,end=16.dp,top=8.dp,bottom=8.dp),verticalAlignment=Alignment.CenterVertically){
-                    Column(Modifier.weight(1f)){Text(artist.optString("name"),fontSize=16.sp,fontWeight=FontWeight.Medium);Text("Apple Music · ${regionLabel(market)}",fontSize=11.sp,color=Muted,modifier=Modifier.padding(top=5.dp))}
-                    TextButton(enabled=changing.isBlank(),onClick={scope.launch{changing=key;try{
+                Row(Modifier.fillMaxWidth().padding(start=20.dp,end=16.dp,top=8.dp,bottom=8.dp),verticalAlignment=Alignment.CenterVertically){
+                    Box(Modifier.size(44.dp).background(Glass,CircleShape),contentAlignment=Alignment.Center){Text(artist.optString("name").take(1),fontSize=17.sp,fontWeight=FontWeight.ExtraBold)}
+                    Column(Modifier.weight(1f).padding(horizontal=14.dp)){Text(artist.optString("name"),fontSize=16.sp,fontWeight=FontWeight.Bold);Text("Apple Music · ${regionLabel(market)}",fontSize=12.sp,color=Secondary,modifier=Modifier.padding(top=2.dp))}
+                    if(changing==key)CircularProgressIndicator(Modifier.size(18.dp),color=TextBright,strokeWidth=2.dp)
+                    else SecondaryPill(if(active)tr(R.string.follow_remove) else tr(R.string.follow_add),{scope.launch{changing=key;try{
                         followed=Library.apiAsync("artists/$id","PUT",JSONObject().put("country",market).put("followed",!active)).getJSONArray("artists").objects()
-                    }catch(e:CancellationException){throw e}catch(_:Exception){message(tr(R.string.catalog_connection_error))}finally{changing=""}}}){
-                        if(changing==key)CircularProgressIndicator(Modifier.size(18.dp),strokeWidth=2.dp) else Text(if(active)tr(R.string.follow_remove) else tr(R.string.follow_add))
-                    }
+                    }catch(e:CancellationException){throw e}catch(_:Exception){message(tr(R.string.catalog_connection_error))}finally{changing=""}}},enabled=changing.isBlank(),selected=!active,height=34.dp)
                 }
             }
             if(shown.isEmpty() && !loading)item{Text(if(query.isBlank())tr(R.string.release_empty) else tr(R.string.follow_not_found),fontSize=13.sp,color=Muted,modifier=Modifier.padding(24.dp))}

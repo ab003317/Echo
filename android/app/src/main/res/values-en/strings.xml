@@ -316,4 +316,12 @@
     <string name="language_label">Language</string>
     <string name="analysis_summary_unavailable">This saved summary cannot be displayed yet. Existing listening preferences remain in use.</string>
     <string name="request_failed">Could not complete this request. Try again.</string>
+    <string name="ui_up_next">Up next</string>
+    <string name="ui_end_of_queue">This is the last song in the queue</string>
+    <string name="ui_shuffle_short">Shuffle</string>
+    <string name="ui_shuffle_all">Shuffle all</string>
+    <string name="history_pill_finished">Finished</string>
+    <string name="history_pill_skipped">Skipped</string>
+    <string name="history_pill_interrupted">Interrupted</string>
+    <string name="history_pill_partial">Heard</string>
 </resources>

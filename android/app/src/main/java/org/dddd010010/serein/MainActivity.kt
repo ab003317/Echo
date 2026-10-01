@@ -32,6 +32,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -146,32 +147,36 @@ class MainActivity : ComponentActivity() {
     val playAction:(List<Song>,Int)->Unit={list,index->play(list,index)}
     val menu:(Song,String)->Unit={song,from->selected=song;playlistContext=from}
     BackHandler(tab!=0 && !expanded && !settings && !queue && !historyOpen && !mixesOpen && selectedMix==null && selected==null){navigate(0)}
-    Scaffold(containerColor=Night,snackbarHost={SnackbarHost(snackbar)},bottomBar={Column {
+    Scaffold(containerColor=Night,snackbarHost={SnackbarHost(snackbar)},bottomBar={Column(Modifier.background(Night)) {
         if(current!=null) MiniPlayer(current,controller,playerEvents,{expanded=true},{toggle()})
-        Row(Modifier.fillMaxWidth().background(Night).navigationBarsPadding().padding(top=8.dp,bottom=4.dp)) {
-            listOf(tr(R.string.ui_listen) to Icons.Outlined.Headphones,tr(R.string.ui_discover_78) to Icons.Outlined.Explore,tr(R.string.ui_library) to Icons.Outlined.LibraryMusic,tr(R.string.ui_downloads) to Icons.Outlined.FileDownload).forEachIndexed{i,item->
-                val tint by animateColorAsState(if(tab==i)TextBright else Muted,label="navigation")
-                Column(Modifier.weight(1f).selectable(selected=tab==i,role=Role.Tab,onClick={navigate(i)}).padding(vertical=5.dp),horizontalAlignment=Alignment.CenterHorizontally){
-                    val selection by animateColorAsState(if(tab==i)Raised else Color.Transparent,label="navigation surface")
-                    Box(Modifier.size(width=54.dp,height=32.dp).background(selection,RoundedCornerShape(16.dp)),contentAlignment=Alignment.Center){Icon(item.second,item.first,Modifier.size(21.dp),tint=tint)}
-                    Text(item.first,fontSize=11.sp,lineHeight=15.sp,fontWeight=if(tab==i)FontWeight.SemiBold else FontWeight.Normal,color=tint,modifier=Modifier.padding(top=4.dp))
+        Row(Modifier.fillMaxWidth().navigationBarsPadding().padding(top=4.dp,bottom=2.dp)) {
+            listOf(Triple(tr(R.string.ui_listen),Icons.Outlined.Headphones,Icons.Rounded.Headphones),Triple(tr(R.string.ui_discover_78),Icons.Outlined.Explore,Icons.Rounded.Explore),
+                Triple(tr(R.string.ui_library),Icons.Outlined.LibraryMusic,Icons.Rounded.LibraryMusic),Triple(tr(R.string.ui_downloads),Icons.Outlined.FileDownload,Icons.Rounded.DownloadForOffline)).forEachIndexed{i,(label,idle,active)->
+                val tint by animateColorAsState(if(tab==i)TextBright else TextBright.copy(alpha=.5f),label="navigation")
+                Column(Modifier.weight(1f).selectable(selected=tab==i,role=Role.Tab,onClick={navigate(i)}).padding(vertical=8.dp),horizontalAlignment=Alignment.CenterHorizontally){
+                    Icon(if(tab==i)active else idle,label,Modifier.size(25.dp),tint=tint)
+                    Text(label,fontSize=11.sp,lineHeight=15.sp,fontWeight=if(tab==i)FontWeight.Bold else FontWeight.SemiBold,color=tint,modifier=Modifier.padding(top=3.dp))
                 }
             }
         }
     }}){padding->Column(Modifier.fillMaxSize().padding(padding)) {
-        if(connectionError.isNotBlank()) Row(Modifier.fillMaxWidth().background(Panel).clickable{refresh()}.padding(horizontal=22.dp,vertical=9.dp),verticalAlignment=Alignment.CenterVertically){
-            Text(connectionError,color=Muted,fontSize=12.sp,modifier=Modifier.weight(1f));Text(tr(R.string.ui_retry),color=Gold,fontSize=12.sp)
+        if(connectionError.isNotBlank()) Row(Modifier.fillMaxWidth().background(Glass).clickable{refresh()}.padding(horizontal=20.dp,vertical=10.dp),verticalAlignment=Alignment.CenterVertically){
+            Text(connectionError,color=Secondary,fontSize=12.sp,modifier=Modifier.weight(1f));Text(tr(R.string.ui_retry),color=TextBright,fontWeight=FontWeight.Bold,fontSize=12.sp)
         }
         HorizontalPager(state=pager,modifier=Modifier.fillMaxWidth().weight(1f),key={it},
             userScrollEnabled=!expanded && !settings && !queue && !historyOpen && !mixesOpen && selectedMix==null && selected==null){page->
         CompositionLocalProvider(LocalArtworkActive provides (page==pager.currentPage || page==pager.targetPage)){
+        Box(Modifier.fillMaxSize()){
+        if(page==0)SongBackdrop(listenPicks(songs).firstOrNull(),Modifier.fillMaxWidth().height(640.dp))
         Column(Modifier.fillMaxSize()){
-        if(page==0)Row(Modifier.fillMaxWidth().padding(horizontal=24.dp,vertical=12.dp),verticalAlignment=Alignment.CenterVertically){
+        if(page==0)Row(Modifier.fillMaxWidth().padding(start=20.dp,end=10.dp,top=10.dp,bottom=4.dp),verticalAlignment=Alignment.CenterVertically){
+            BrandMark(Modifier.size(26.dp))
+            Spacer(Modifier.width(10.dp))
             EchoWordmark(Modifier.weight(1f))
-            if(!Library.online) Icon(Icons.Rounded.CloudOff,tr(R.string.ui_offline),Modifier.padding(end=12.dp).size(18.dp),tint=Muted)
+            if(!Library.online) Icon(Icons.Rounded.CloudOff,tr(R.string.ui_offline),Modifier.padding(end=8.dp).size(18.dp),tint=Secondary)
             HeaderActions{
-                IconButton(onClick={historyOpen=true}){Icon(Icons.Outlined.History,tr(R.string.ui_listening_history),Modifier.size(21.dp),tint=TextBright)}
-                IconButton(onClick={settings=true}){Icon(Icons.Outlined.Settings,tr(R.string.ui_settings),Modifier.size(21.dp),tint=TextBright)}
+                GlassIcon(Icons.Rounded.History,tr(R.string.ui_listening_history),{historyOpen=true})
+                GlassIcon(Icons.Rounded.Tune,tr(R.string.ui_settings),{settings=true})
             }
         }
         when(page){
@@ -180,27 +185,28 @@ class MainActivity : ComponentActivity() {
             2->LibraryScreen(songs,playAction,menu,active=page==pager.settledPage && !pager.isScrollInProgress && !expanded && !settings && !queue && !historyOpen && !mixesOpen && selectedMix==null && selected==null,savedMixes=editions.filter{it.saved},openMix={selectedMix=it},toggleMix=mixes::toggle)
             3->DownloadsScreen(songs,playAction,{s->menu(s,"")},{settings=true},::message)
         }
-        }}}
+        }}}}
     }}
     if(settings) FullSheet({settings=false}){dismiss->SettingsScreen(beforeServerChange={controller?.stop();controller?.clearMediaItems();androidx.work.WorkManager.getInstance(context).cancelUniqueWork("offline-sync")}){dismiss();refresh()}}
     if(current!=null) PlayerScene(expanded,{expanded=false}){PlayerScreen(current,controller,playerEvents,{toggle()},{queue=true},{menu(current,"")},{expanded=false})}
     fun closeChild(){queue=false;selected=null}
-    if(queue) FullSheet(::closeChild){dismiss->QueueScreen(controller,playerEvents,dismiss)}
-    if(historyOpen)FullSheet({historyOpen=false}){dismiss->HistoryScreen(history,dismiss,playAction,{menu(it,"")},::message)}
-    if(mixesOpen)FullSheet({mixesOpen=false}){dismiss->MixBrowser(mixes,dismiss,{selectedMix=it})}
-    selectedMix?.let{mix->FullSheet({selectedMix=null}){dismiss->MixDetail(mix,mixes,dismiss,playAction,{menu(it,"")},::message)}}
+    if(queue) FullSheet(::closeChild,backdrop={SongBackdrop(current,Modifier.matchParentSize())}){dismiss->QueueScreen(controller,playerEvents,dismiss)}
+    if(historyOpen)FullSheet({historyOpen=false},fullHeight=false){dismiss->HistoryScreen(history,dismiss,playAction,{menu(it,"")},::message)}
+    if(mixesOpen)FullSheet({mixesOpen=false},fullHeight=false){dismiss->MixBrowser(mixes,dismiss,{selectedMix=it})}
+    selectedMix?.let{mix->FullSheet({selectedMix=null},fullHeight=false,backdrop={SongBackdrop(mix.songs.firstOrNull{it.hasCover},Modifier.fillMaxWidth().height(620.dp))}){dismiss->MixDetail(mix,mixes,dismiss,playAction,{menu(it,"")},::message)}}
     selected?.let{s->SongSheet(s,controller,playlistContext,::closeChild,::message)}
 }
 
 @Composable fun MiniPlayer(song:Song,c:MediaController?,events:Int,open:()->Unit,toggle:()->Unit){
     val ui=playbackUi(c,events)
-    Column(Modifier.padding(horizontal=12.dp).clip(RoundedCornerShape(10.dp)).background(Panel).border(.5.dp,TextBright.copy(alpha=.08f),RoundedCornerShape(10.dp))){
-        Row(Modifier.fillMaxWidth().clickable(onClick=open).padding(start=7.dp,end=2.dp,top=6.dp,bottom=6.dp),verticalAlignment=Alignment.CenterVertically){
-            Artwork(song,Modifier.size(38.dp),4,priority=true)
-            Column(Modifier.weight(1f).padding(horizontal=11.dp)){Text(song.title,fontSize=13.sp,fontWeight=FontWeight.Medium,maxLines=1,overflow=TextOverflow.Ellipsis);Text(song.artist,fontSize=11.sp,color=Muted,maxLines=1,overflow=TextOverflow.Ellipsis,modifier=Modifier.padding(top=2.dp))}
-            IconButton(onClick=toggle,modifier=Modifier.semantics{contentDescription=tr(R.string.ui_play_or_pause)}){if(ui.playing && ui.buffering)CircularProgressIndicator(Modifier.size(20.dp),color=Gold,strokeWidth=2.dp) else Icon(if(ui.playing && !ui.ended)Icons.Rounded.Pause else Icons.Rounded.PlayArrow,null,tint=TextBright)}
-            IconButton(onClick={c?.seekToNextMediaItem()},enabled=ui.hasNext){Icon(Icons.Rounded.SkipNext,tr(R.string.ui_next_song))}
+    val shape=RoundedCornerShape(16.dp)
+    Box(Modifier.padding(start=10.dp,end=10.dp,top=4.dp,bottom=4.dp).shadow(18.dp,shape).clip(shape).background(Color(0xFF26282C)).border(1.dp,Hairline,shape)){
+        Row(Modifier.fillMaxWidth().clickable(onClick=open).padding(start=10.dp,end=4.dp,top=9.dp,bottom=9.dp),verticalAlignment=Alignment.CenterVertically){
+            Artwork(song,Modifier.size(42.dp),8,priority=true)
+            Column(Modifier.weight(1f).padding(horizontal=12.dp)){Text(song.title,fontSize=14.sp,fontWeight=FontWeight.Bold,maxLines=1,overflow=TextOverflow.Ellipsis);Text(song.artist,fontSize=12.sp,color=Secondary,maxLines=1,overflow=TextOverflow.Ellipsis,modifier=Modifier.padding(top=1.dp))}
+            IconButton(onClick=toggle,modifier=Modifier.semantics{contentDescription=tr(R.string.ui_play_or_pause)}){if(ui.playing && ui.buffering)CircularProgressIndicator(Modifier.size(20.dp),color=TextBright,strokeWidth=2.dp) else Icon(if(ui.playing && !ui.ended)Icons.Rounded.Pause else Icons.Rounded.PlayArrow,null,Modifier.size(28.dp),tint=TextBright)}
+            IconButton(onClick={c?.seekToNextMediaItem()},enabled=ui.hasNext){Icon(Icons.Rounded.SkipNext,tr(R.string.ui_next_song),Modifier.size(28.dp))}
         }
-        PlayerProgress(c,compact=true)
+        Box(Modifier.align(Alignment.BottomCenter).padding(horizontal=14.dp)){PlayerProgress(c,compact=true)}
     }
 }

@@ -31,7 +31,7 @@
     <string name="follow_search">搜尋歌手名稱</string>
     <string name="follow_identity_hint">選擇 Apple Music 目錄地區，再確認要關注的歌手</string>
     <string name="follow_not_found">沒有符合的歌手，可更換地區或名稱</string>
-    <string name="queue_drag_hint">長按左側拖曳柄調整順序</string>
+    <string name="queue_drag_hint">長按右側拖曳柄調整順序</string>
     <string name="queue_reorder">調整 %1$s 的播放順序</string>
     <string name="queue_move_up">上移</string>
     <string name="queue_move_down">下移</string>

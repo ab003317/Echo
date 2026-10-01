@@ -38,8 +38,15 @@ object ArtworkImages {
             .build()
     }
     fun key(song:Song)=Library.art(song)
+    fun source(song:Song,local:Boolean):Any=if(local)File(Library.mediaDir,song.id+".cover") else key(song)
+    /** A tiny decode of the cover for page atmospheres; stretching it is the blur. Shares the disk cache with the full cover. */
+    fun ambient(context:Context,data:Any,cacheKey:String)=ImageRequest.Builder(context)
+        .data(data).size(24,24)
+        .memoryCacheKey("$cacheKey#ambient").diskCacheKey(cacheKey)
+        .addHeader("User-Agent","Echo/0.7").addHeader("X-Echo-Image-Priority","list")
+        .build()
     fun request(context:Context,song:Song,local:Boolean,tone:Boolean,priority:Boolean)=ImageRequest.Builder(context)
-        .data(if(local)File(Library.mediaDir,song.id+".cover") else key(song))
+        .data(source(song,local))
         .memoryCacheKey(key(song)).diskCacheKey(key(song))
         .addHeader("User-Agent","Echo/0.7").addHeader("X-Echo-Image-Priority",if(priority)"playback" else "list")
         .allowHardware(!tone).build()

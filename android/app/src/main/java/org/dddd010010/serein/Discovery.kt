@@ -16,6 +16,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -165,26 +166,32 @@ class DiscoveryModel:ViewModel(){
             if((listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0)>=listState.layoutInfo.totalItemsCount-7 && model.error.isBlank())model.loadMore()
         }
     }
+    val lead=model.rows.firstOrNull()
+    Box(Modifier.fillMaxSize()){
+    // The first recommendation tints the page, so the atmosphere follows what is actually on screen.
+    if(section !in listOf("charts","releases")){
+        if(lead?.song!=null)SongBackdrop(lead.song,Modifier.fillMaxWidth().height(560.dp))
+        else AmbientBackdrop(lead?.cover?.ifBlank{null},lead?.cover?.ifBlank{null},Modifier.fillMaxWidth().height(560.dp))
+    }
     Column {
-        Row(Modifier.padding(horizontal=24.dp,vertical=12.dp),verticalAlignment=Alignment.CenterVertically){
-            PageTitle(tr(R.string.ui_discover),Modifier.weight(1f))
+        Row(Modifier.fillMaxWidth().padding(start=20.dp,end=10.dp,top=12.dp,bottom=8.dp),verticalAlignment=Alignment.CenterVertically){
+            PageTitle(tr(R.string.ui_discover),Modifier.weight(1f),size=30)
             HeaderActions{
-            IconButton(onClick={tasks=true}){BadgedBox(badge={val active=model.jobs.count{it.optString("status") in listOf("queued","downloading")};if(active>0)Badge{Text(active.toString())}}){Icon(Icons.Rounded.PlaylistAddCheck,tr(R.string.ui_imports))}}
-            IconButton(onClick={link=true}){Icon(Icons.Rounded.AddLink,tr(R.string.ui_paste_a_link))}
+                val active=model.jobs.count{it.optString("status") in listOf("queued","downloading")}
+                BadgedBox(badge={if(active>0)Badge(containerColor=TextBright,contentColor=Night){Text(active.toString())}}){GlassIcon(Icons.Rounded.PlaylistAddCheck,tr(R.string.ui_imports),{tasks=true})}
+                GlassIcon(Icons.Rounded.AddLink,tr(R.string.ui_paste_a_link),{link=true})
             }
         }
         SearchBox(model.query,{model.query=it},tr(R.string.ui_song_artist_or_youtube_link),submit={
             if(model.query.trim().startsWith("https://"))model.add(model.query.trim(),message=message) else {section=model.mode;model.search();scope.launch{listState.scrollToItem(0)}}
         },clear={section=model.mode;model.query="";model.search()})
-        Row(Modifier.fillMaxWidth().padding(start=24.dp,end=12.dp,top=6.dp,bottom=16.dp),verticalAlignment=Alignment.CenterVertically){
-            LazyRow(Modifier.weight(1f)){
-                items(listOf("taste" to tr(R.string.ui_for_you),"new" to tr(R.string.ui_explore),"charts" to tr(R.string.chart_tab),"releases" to tr(R.string.release_tab))){(id,label)->LineTab(label,section==id){section=id;if(id in listOf("taste","new")){model.changeMode(id);scope.launch{listState.scrollToItem(0)}}}}
-            }
+        LazyRow(Modifier.fillMaxWidth().padding(top=8.dp,bottom=8.dp),contentPadding=PaddingValues(horizontal=20.dp),horizontalArrangement=Arrangement.spacedBy(8.dp)){
+            items(listOf("taste" to tr(R.string.ui_for_you),"new" to tr(R.string.ui_explore),"charts" to tr(R.string.chart_tab),"releases" to tr(R.string.release_tab))){(id,label)->LineTab(label,section==id){section=id;if(id in listOf("taste","new")){model.changeMode(id);scope.launch{listState.scrollToItem(0)}}}}
         }
         if(section in listOf("charts","releases"))Box(Modifier.weight(1f)){
             ChartScreen(charts,section,model,play,{query->section="taste";model.changeMode("taste");model.query=query;model.search()},message)
         }else PullToRefreshBox(isRefreshing=model.refreshing,onRefresh={refresh()},modifier=Modifier.weight(1f)){
-            LazyVerticalGrid(columns=GridCells.Adaptive(145.dp),state=listState,contentPadding=PaddingValues(start=24.dp,end=24.dp,bottom=24.dp),horizontalArrangement=Arrangement.spacedBy(16.dp),verticalArrangement=Arrangement.spacedBy(22.dp),modifier=Modifier.fillMaxSize()){
+            LazyVerticalGrid(columns=GridCells.Adaptive(145.dp),state=listState,contentPadding=PaddingValues(start=20.dp,end=20.dp,top=8.dp,bottom=24.dp),horizontalArrangement=Arrangement.spacedBy(14.dp),verticalArrangement=Arrangement.spacedBy(20.dp),modifier=Modifier.fillMaxSize()){
                 if(model.resultQuery.isNotBlank())item(span={GridItemSpan(maxLineSpan)}){Text(tr(R.string.ui_results_for, model.resultQuery),fontSize=13.sp,color=Muted,modifier=Modifier.padding(vertical=4.dp))}
                 items(model.rows,key={"discovery-${it.id}"}){song->DiscoveryRow(song,if(song.song!=null)"complete" else model.state(song.id),{
                     if(song.song!=null){val queue=model.rows.mapNotNull{it.song}.distinctBy{it.id};play(queue,queue.indexOfFirst{it.id==song.song.id}.coerceAtLeast(0))}
@@ -199,6 +206,7 @@ class DiscoveryModel:ViewModel(){
                 }
             }
         }
+    }
     }
     if(link)TextDialog(tr(R.string.ui_add_music),tr(R.string.ui_youtube_link_to_a_song_or_music_collection),{link=false}){model.add(it,message=message);link=false}
     if(tasks)FullSheet({tasks=false}){dismiss->Column{SheetTitle(tr(R.string.ui_imports),dismiss);LazyColumn(Modifier.fillMaxWidth().weight(1f,false),contentPadding=PaddingValues(bottom=24.dp)){
@@ -220,9 +228,9 @@ class DiscoveryModel:ViewModel(){
 }
 
 @Composable fun DiscoveryRow(song:DiscoveryTrack,state:String,play:()->Unit,add:()->Unit){
-    Column(Modifier.fillMaxWidth().then(if(state=="complete")Modifier.clickable(onClick=play) else Modifier)){
-        Box(Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(4.dp)).background(Panel)){
-            if(song.song!=null)Artwork(song.song,Modifier.fillMaxSize(),4)
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).then(if(state=="complete")Modifier.clickable(onClick=play) else Modifier)){
+        Box(Modifier.fillMaxWidth().aspectRatio(1f).shadow(14.dp,RoundedCornerShape(14.dp)).clip(RoundedCornerShape(14.dp)).background(Raised)){
+            if(song.song!=null)Artwork(song.song,Modifier.fillMaxSize(),0)
             else {
                 val context=androidx.compose.ui.platform.LocalContext.current
                 val active=LocalArtworkActive.current
@@ -233,14 +241,14 @@ class DiscoveryModel:ViewModel(){
                 val record=rememberRecordArtwork(song.artist+song.title,song.cover.isBlank() || failed)
                 if(started)AsyncImage(request,null,Modifier.fillMaxSize(),placeholder=record,error=record,fallback=record,contentScale=ContentScale.Crop,onError={failed=true},onSuccess={failed=false})
             }
-            if(song.duration>0)Text(timeLabel((song.duration*1000).toLong()),color=TextBright,fontSize=10.sp,modifier=Modifier.align(Alignment.TopEnd).padding(7.dp).background(Night.copy(alpha=.68f),RoundedCornerShape(4.dp)).padding(horizontal=6.dp,vertical=3.dp))
-            IconButton(onClick=if(state=="complete")play else add,enabled=state!in listOf("queued","downloading"),modifier=Modifier.align(Alignment.BottomEnd).padding(4.dp)){
-                Box(Modifier.size(36.dp).background(if(state in listOf("queued","downloading"))Panel else TextBright,CircleShape),contentAlignment=Alignment.Center){
-                    Icon(when(state){"complete"->Icons.Rounded.PlayArrow;"queued","downloading"->Icons.Rounded.Schedule;"failed"->Icons.Rounded.Refresh;else->Icons.Rounded.Add},if(state=="complete")tr(R.string.ui_play_39, song.title) else tr(R.string.ui_add, song.title),Modifier.size(22.dp),tint=if(state in listOf("queued","downloading"))Muted else Night)
-                }
+            // Songs already in the library play on tap; only tracks that still need importing carry an action button.
+            if(state!="complete")GlassButton(add,Modifier.align(Alignment.BottomEnd).padding(4.dp),size=36.dp,enabled=state!in listOf("queued","downloading"),
+                fill=if(state in listOf("queued","downloading"))Color.Black.copy(alpha=.5f) else TextBright){
+                Icon(when(state){"queued","downloading"->Icons.Rounded.Schedule;"failed"->Icons.Rounded.Refresh;else->Icons.Rounded.Add},tr(R.string.ui_add, song.title),Modifier.size(21.dp),tint=if(state in listOf("queued","downloading"))TextBright else Night)
             }
         }
-        Text(song.title,fontSize=14.sp,fontWeight=FontWeight.Medium,maxLines=2,minLines=2,overflow=TextOverflow.Ellipsis,lineHeight=20.sp,modifier=Modifier.padding(top=10.dp))
-        Text(when(state){"queued"->tr(R.string.ui_waiting_to_add);"downloading"->tr(R.string.ui_adding);"failed"->tr(R.string.ui_could_not_add_tap_to_retry);else->song.artist},fontSize=11.sp,lineHeight=16.sp,color=Muted,maxLines=1,overflow=TextOverflow.Ellipsis,modifier=Modifier.padding(top=3.dp))
+        Text(song.title,fontSize=15.sp,fontWeight=FontWeight.Bold,maxLines=1,overflow=TextOverflow.Ellipsis,modifier=Modifier.padding(top=10.dp))
+        Text(when(state){"queued"->tr(R.string.ui_waiting_to_add);"downloading"->tr(R.string.ui_adding);"failed"->tr(R.string.ui_could_not_add_tap_to_retry);else->song.artist+(if(song.duration>0)" · "+timeLabel((song.duration*1000).toLong()) else "")},
+            fontSize=13.sp,color=Secondary,maxLines=1,overflow=TextOverflow.Ellipsis,modifier=Modifier.padding(top=1.dp))
     }
 }

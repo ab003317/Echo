@@ -20,12 +20,12 @@ daily discovery and recommendations informed by listening behavior.
 
 ## App screenshots
 
-Captured from Echo 0.9.2 with a demonstration library. Select an image to view it at full size.
+Captured from Echo 0.10.0 with a demonstration library. Page backgrounds take their colour from the current cover. Select an image to view it at full size.
 
 | Home and daily mixes | Player | Playback queue |
 | --- | --- | --- |
-| [<img src="screenshots/en/home.png" width="230" alt="Echo home with recommended music and daily mixes">](screenshots/en/home.png) | [<img src="screenshots/en/player.png" width="230" alt="Echo player with artwork, playback controls and sleep timer">](screenshots/en/player.png) | [<img src="screenshots/en/queue.png" width="230" alt="Echo queue with drag handles and track menus">](screenshots/en/queue.png) |
-| Browse recommendations and daily rotating mixes. Save a mix to keep it permanently. | Seek, shuffle, repeat, favorite tracks and set a sleep timer. Playback continues in the background. | Drag to reorder tracks, remove them from the track menu, and see what is playing. |
+| [<img src="screenshots/en/home.png" width="230" alt="Echo home with recommended music and daily mixes">](screenshots/en/home.png) | [<img src="screenshots/en/player.png" width="230" alt="Echo player with artwork, playback controls, sleep timer and up next">](screenshots/en/player.png) | [<img src="screenshots/en/queue.png" width="230" alt="Echo queue with drag handles and track menus">](screenshots/en/queue.png) |
+| Browse recommendations and daily rotating mixes. Save a mix to keep it permanently. | Seek, shuffle, repeat, favorite tracks and set a sleep timer. Up next previews the following track and opens the queue. Playback continues in the background. | Hold the handle on the right to reorder tracks, remove them from the track menu, and switch shuffle or repeat directly. |
 
 | Discover | Charts | Offline music |
 | --- | --- | --- |
