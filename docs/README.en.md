@@ -20,7 +20,7 @@ daily discovery and recommendations informed by listening behavior.
 
 ## App screenshots
 
-Captured from Echo 0.10.0 with a demonstration library. Page backgrounds take their colour from the current cover. Select an image to view it at full size.
+Captured from Echo with a demonstration library. Page backgrounds take their colour from the current cover. Select an image to view it at full size.
 
 | Home and daily mixes | Player | Playback queue |
 | --- | --- | --- |

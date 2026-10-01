@@ -17,7 +17,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
@@ -150,6 +154,15 @@ class DiscoveryModel:ViewModel(){
     var link by rememberSaveable{mutableStateOf(false)}
     var tasks by rememberSaveable{mutableStateOf(false)}
     val keyboard=LocalSoftwareKeyboardController.current
+    val searchFocusManager=androidx.compose.ui.platform.LocalFocusManager.current
+    var searchFocused by remember{mutableStateOf(false)}
+    var searchRequest by remember{mutableIntStateOf(0)}
+    var actionsMenu by remember{mutableStateOf(false)}
+    val searchFocus=remember{FocusRequester()}
+    val ime=WindowInsets.ime
+    val density=androidx.compose.ui.platform.LocalDensity.current
+    val header=TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState(),canScroll={!searchFocused || ime.getBottom(density)==0})
+    LaunchedEffect(searchRequest){if(searchRequest>0){header.state.heightOffset=0f;searchFocus.requestFocus();keyboard?.show()}}
     val scope=rememberCoroutineScope()
     fun refresh(){keyboard?.hide();model.refresh()}
     LaunchedEffect(Unit){model.ensureLoaded()}
@@ -173,20 +186,28 @@ class DiscoveryModel:ViewModel(){
         if(lead?.song!=null)SongBackdrop(lead.song,Modifier.fillMaxWidth().height(560.dp))
         else AmbientBackdrop(lead?.cover?.ifBlank{null},lead?.cover?.ifBlank{null},Modifier.fillMaxWidth().height(560.dp))
     }
-    Column {
+    Column(Modifier.fillMaxSize().nestedScroll(header.nestedScrollConnection)) {
+        CollapsingHeader(header){
         Row(Modifier.fillMaxWidth().padding(start=20.dp,end=10.dp,top=12.dp,bottom=8.dp),verticalAlignment=Alignment.CenterVertically){
             PageTitle(tr(R.string.ui_discover),Modifier.weight(1f),size=30)
             HeaderActions{
+                if(section in listOf("charts","releases"))GlassIcon(Icons.Rounded.Search,tr(R.string.ui_search),{section=model.mode;searchRequest++})
                 val active=model.jobs.count{it.optString("status") in listOf("queued","downloading")}
-                BadgedBox(badge={if(active>0)Badge(containerColor=TextBright,contentColor=Night){Text(active.toString())}}){GlassIcon(Icons.Rounded.PlaylistAddCheck,tr(R.string.ui_imports),{tasks=true})}
-                GlassIcon(Icons.Rounded.AddLink,tr(R.string.ui_paste_a_link),{link=true})
+                Box{
+                    BadgedBox(badge={if(active>0)Badge(containerColor=TextBright,contentColor=Night){Text(active.toString())}}){GlassIcon(Icons.Rounded.MoreHoriz,tr(R.string.browse_more_actions),{actionsMenu=true})}
+                    DropdownMenu(actionsMenu,{actionsMenu=false},containerColor=Panel){
+                        DropdownMenuItem(text={Text(tr(R.string.ui_imports))},leadingIcon={Icon(Icons.Rounded.PlaylistAddCheck,null)},onClick={actionsMenu=false;tasks=true})
+                        DropdownMenuItem(text={Text(tr(R.string.ui_paste_a_link))},leadingIcon={Icon(Icons.Rounded.AddLink,null)},onClick={actionsMenu=false;link=true})
+                    }
+                }
             }
         }
-        SearchBox(model.query,{model.query=it},tr(R.string.ui_song_artist_or_youtube_link),submit={
+        if(section !in listOf("charts","releases"))SearchBox(model.query,{model.query=it},tr(R.string.ui_song_artist_or_youtube_link),submit={
             if(model.query.trim().startsWith("https://"))model.add(model.query.trim(),message=message) else {section=model.mode;model.search();scope.launch{listState.scrollToItem(0)}}
-        },clear={section=model.mode;model.query="";model.search()})
-        LazyRow(Modifier.fillMaxWidth().padding(top=8.dp,bottom=8.dp),contentPadding=PaddingValues(horizontal=20.dp),horizontalArrangement=Arrangement.spacedBy(8.dp)){
-            items(listOf("taste" to tr(R.string.ui_for_you),"new" to tr(R.string.ui_explore),"charts" to tr(R.string.chart_tab),"releases" to tr(R.string.release_tab))){(id,label)->LineTab(label,section==id){section=id;if(id in listOf("taste","new")){model.changeMode(id);scope.launch{listState.scrollToItem(0)}}}}
+        },clear={section=model.mode;model.query="";model.search()},modifier=Modifier.focusRequester(searchFocus).onFocusChanged{searchFocused=it.isFocused})
+        }
+        LazyRow(Modifier.fillMaxWidth().padding(vertical=2.dp),contentPadding=PaddingValues(horizontal=20.dp),horizontalArrangement=Arrangement.spacedBy(8.dp)){
+            items(listOf("taste" to tr(R.string.ui_for_you),"new" to tr(R.string.ui_explore),"charts" to tr(R.string.chart_tab),"releases" to tr(R.string.release_tab))){(id,label)->LineTab(label,section==id){keyboard?.hide();searchFocusManager.clearFocus();searchFocused=false;section=id;if(id in listOf("taste","new")){model.changeMode(id);scope.launch{listState.scrollToItem(0)}}}}
         }
         if(section in listOf("charts","releases"))Box(Modifier.weight(1f)){
             ChartScreen(charts,section,model,play,{query->section="taste";model.changeMode("taste");model.query=query;model.search()},message)

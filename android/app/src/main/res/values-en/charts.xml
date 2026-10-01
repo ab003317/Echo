@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="browse_more_actions">More actions</string>
+    <string name="chart_source">Chart source</string>
+    <string name="chart_region">Region</string>
+    <string name="chart_period">Period</string>
     <string name="chart_tab">Charts</string>
     <string name="release_tab">New releases</string>
     <string name="chart_global">Global</string>

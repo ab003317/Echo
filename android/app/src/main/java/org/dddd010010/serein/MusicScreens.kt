@@ -17,6 +17,8 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
@@ -98,6 +100,10 @@ fun listenPicks(songs:List<Song>)=Library.recIds.mapNotNull{id->songs.find{it.id
     var rename by remember{mutableStateOf(false)}
     var deleting by remember{mutableStateOf(false)}
     var sortMenu by remember{mutableStateOf(false)}
+    var searchFocused by remember{mutableStateOf(false)}
+    val ime=WindowInsets.ime
+    val density=androidx.compose.ui.platform.LocalDensity.current
+    val header=TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState(),canScroll={!searchFocused || ime.getBottom(density)==0})
     var error by remember{mutableStateOf("")}
     val names=Library.playlists.keys().asSequence().toList()
     val playlist=Library.playlists.optJSONArray(group)
@@ -113,10 +119,12 @@ fun listenPicks(songs:List<Song>)=Library.recIds.mapNotNull{id->songs.find{it.id
     var previousCriteria by rememberSaveable{mutableStateOf(criteria)}
     LaunchedEffect(criteria){if(previousCriteria!=criteria){state.scrollToItem(0);previousCriteria=criteria}}
     BackHandler(active && (group.isNotBlank() || query.isNotBlank())){if(group.isNotBlank())group="" else query=""}
-    Column(Modifier.background(Brush.verticalGradient(listOf(Color(0xFF17181C),Night),endY=900f))) {
+    Column(Modifier.fillMaxSize().nestedScroll(header.nestedScrollConnection).background(Brush.verticalGradient(listOf(Color(0xFF17181C),Night),endY=900f))) {
+        CollapsingHeader(header){
         PageHeader(tr(R.string.ui_library),tr(R.string.ui_tracks_89, songs.size)){GlassIcon(Icons.Rounded.PlaylistAdd,tr(R.string.ui_new_playlist),{create=true})}
-        SearchBox(query,{query=it},tr(R.string.ui_search_songs_artists_and_albums))
-        LazyRow(contentPadding=PaddingValues(horizontal=20.dp,vertical=6.dp),horizontalArrangement=Arrangement.spacedBy(8.dp)){
+        SearchBox(query,{query=it},tr(R.string.ui_search_songs_artists_and_albums),modifier=Modifier.onFocusChanged{searchFocused=it.isFocused})
+        }
+        LazyRow(contentPadding=PaddingValues(horizontal=20.dp,vertical=2.dp),horizontalArrangement=Arrangement.spacedBy(8.dp)){
             items(listOf("ui_songs" to tr(R.string.ui_songs),"ui_favorites" to tr(R.string.ui_favorites),"ui_playlists" to tr(R.string.ui_playlists),"ui_artist" to tr(R.string.ui_artist),"ui_albums" to tr(R.string.ui_albums),"ui_downloaded" to tr(R.string.ui_downloaded))){(id,label)->LineTab(label,filter==id){filter=id;group=""}}
         }
         if(group.isNotEmpty())Row(Modifier.padding(start=12.dp,end=10.dp,top=4.dp),verticalAlignment=Alignment.CenterVertically){
@@ -143,14 +151,19 @@ fun listenPicks(songs:List<Song>)=Library.recIds.mapNotNull{id->songs.find{it.id
                     }
                 }
             }else{
-                item{Row(Modifier.fillMaxWidth().padding(start=10.dp,end=16.dp,top=2.dp,bottom=4.dp),verticalAlignment=Alignment.CenterVertically){
-                    Box(Modifier.weight(1f)){TextButton(onClick={sortMenu=true},enabled=filter!="ui_playlists"){Text(if(filter=="ui_playlists")tr(R.string.ui_tracks_added_order, list.size) else tr(R.string.ui_tracks, AppLocale.named(sort), list.size),fontSize=14.sp,fontWeight=FontWeight.Bold,color=TextBright.copy(alpha=.8f));if(filter!="ui_playlists")Icon(Icons.Rounded.KeyboardArrowDown,null,Modifier.size(18.dp),tint=TextBright.copy(alpha=.8f))}
+                item{BoxWithConstraints(Modifier.fillMaxWidth()){
+                val compactActions=maxWidth<(360f*density.fontScale).dp
+                Row(Modifier.fillMaxWidth().padding(start=10.dp,end=16.dp,top=2.dp,bottom=4.dp),verticalAlignment=Alignment.CenterVertically){
+                    Box(Modifier.weight(1f)){TextButton(onClick={sortMenu=true},enabled=filter!="ui_playlists"){
+                        Text(if(filter=="ui_playlists")tr(R.string.ui_tracks_89,list.size) else "${AppLocale.named(sort)} · ${list.size}",fontSize=14.sp,fontWeight=FontWeight.Bold,color=TextBright.copy(alpha=.8f),maxLines=1,overflow=TextOverflow.Ellipsis,modifier=Modifier.weight(1f,false))
+                        if(filter!="ui_playlists")Icon(Icons.Rounded.KeyboardArrowDown,null,Modifier.size(18.dp),tint=TextBright.copy(alpha=.8f))}
                         DropdownMenu(sortMenu,{sortMenu=false},containerColor=Panel){listOf("ui_recently_added" to tr(R.string.ui_recently_added),"ui_song_title" to tr(R.string.ui_song_title),"ui_most_played" to tr(R.string.ui_most_played)).forEach{(id,label)->DropdownMenuItem(text={Text(label)},onClick={sort=id;sortMenu=false})}}
                     }
                     GlassIcon(Icons.Rounded.Shuffle,tr(R.string.ui_shuffle_all),{play(list.shuffled(),0)},enabled=list.isNotEmpty())
                     Spacer(Modifier.width(4.dp))
-                    PrimaryPill(tr(R.string.ui_play_all),{play(list,0)},enabled=list.isNotEmpty())
-                }}
+                    if(compactActions)GlassButton({play(list,0)},size=46.dp,enabled=list.isNotEmpty(),fill=if(list.isNotEmpty())TextBright else Glass){Icon(Icons.Rounded.PlayArrow,tr(R.string.ui_play_all),Modifier.size(24.dp),tint=if(list.isNotEmpty())Night else Secondary)}
+                    else PrimaryPill(tr(R.string.ui_play_all),{play(list,0)},enabled=list.isNotEmpty())
+                }}}
                 if(list.isEmpty())item{EmptyState(tr(R.string.ui_no_songs_yet),if(filter=="ui_favorites")tr(R.string.ui_open_a_song_s_menu_to_add_it_to_favorites) else tr(R.string.ui_try_another_search_or_add_some_music_first))}
                 items(list,key={it.id}){s->SongRow(s,{play(list,list.indexOf(s))},{menu(s,if(filter=="ui_playlists")group else "")})}
             }

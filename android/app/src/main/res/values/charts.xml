@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="browse_more_actions">更多操作</string>
+    <string name="chart_source">榜單來源</string>
+    <string name="chart_region">地區</string>
+    <string name="chart_period">統計期間</string>
     <string name="chart_tab">榜單</string>
     <string name="release_tab">新發行</string>
     <string name="chart_global">全球</string>

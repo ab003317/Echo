@@ -313,15 +313,17 @@ private val AmbientFilter=ColorFilter.colorMatrix(ColorMatrix().apply{
     }
     if(trailing!=null)trailing() else IconButton(onClick=menu){Icon(Icons.Rounded.MoreHoriz,tr(R.string.ui_options_for, song.title),tint=Secondary)}
 }}
-@Composable fun SearchBox(value:String,change:(String)->Unit,placeholder:String,submit:()->Unit={},clear:()->Unit={change("")}){
+@Composable fun SearchBox(value:String,change:(String)->Unit,placeholder:String,submit:()->Unit={},clear:()->Unit={change("")},modifier:Modifier=Modifier){
     val keyboard=LocalSoftwareKeyboardController.current
+    val focus=androidx.compose.ui.platform.LocalFocusManager.current
+    fun search(){keyboard?.hide();focus.clearFocus();submit()}
     TextField(value,change,placeholder={Text(placeholder,fontSize=15.sp,maxLines=1,overflow=TextOverflow.Ellipsis,color=TextBright.copy(alpha=.5f))},singleLine=true,
-        leadingIcon={IconButton(onClick={keyboard?.hide();submit()}){Icon(Icons.Rounded.Search,tr(R.string.ui_search),Modifier.size(20.dp),tint=Secondary)}},
+        leadingIcon={IconButton(onClick={search()}){Icon(Icons.Rounded.Search,tr(R.string.ui_search),Modifier.size(20.dp),tint=Secondary)}},
         trailingIcon={if(value.isNotBlank())IconButton(onClick=clear){Icon(Icons.Rounded.Close,tr(R.string.ui_clear_search),Modifier.size(18.dp),tint=Secondary)}},
-        keyboardOptions=KeyboardOptions(imeAction=ImeAction.Search),keyboardActions=KeyboardActions(onSearch={keyboard?.hide();submit()}),shape=RoundedCornerShape(12.dp),
+        keyboardOptions=KeyboardOptions(imeAction=ImeAction.Search),keyboardActions=KeyboardActions(onSearch={search()}),shape=RoundedCornerShape(12.dp),
         textStyle=TextStyle(fontFamily=SereinFont,fontSize=15.sp),
         colors=TextFieldDefaults.colors(focusedContainerColor=Glass,unfocusedContainerColor=Glass,focusedIndicatorColor=Color.Transparent,unfocusedIndicatorColor=Color.Transparent,cursorColor=TextBright),
-        modifier=Modifier.fillMaxWidth().padding(horizontal=20.dp))
+        modifier=modifier.fillMaxWidth().padding(horizontal=20.dp))
 }
 /** Row inside a [GlassCard]: optional icon tile, label, subtitle and trailing content. */
 @Composable fun CardRow(text:String,icon:ImageVector?=null,subtitle:String?=null,color:Color=TextBright,tile:Boolean=false,click:(()->Unit)?=null,trailing:@Composable (RowScope.()->Unit)?=null){

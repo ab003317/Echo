@@ -17,6 +17,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -90,17 +93,20 @@ private fun regionLabel(id:String)=when(id){"global"->tr(R.string.chart_global);
     LaunchedEffect(section,model.provider,model.region,model.days){state.scrollToItem(0)}
     Column(Modifier.fillMaxSize()){
         if(section=="charts"){
-            Segmented(listOf("youtube" to "YouTube","apple" to "Apple Music","echo" to "Echo"),model.provider,{model.select(provider=it)},Modifier.padding(horizontal=20.dp,vertical=4.dp))
-            LazyRow(contentPadding=PaddingValues(horizontal=10.dp)){
-                if(model.provider=="echo")items(listOf(7,30,0)){days->ScopeTab(when(days){7->tr(R.string.chart_week);30->tr(R.string.chart_month);else->tr(R.string.chart_all_time)},model.days==days){model.select(days=days)}}
-                else items(if(model.provider=="youtube")listOf("global","hk","tw","jp") else listOf("hk","tw","jp")){region->ScopeTab(regionLabel(region),model.region==region){model.select(region=region)}}
+            Row(Modifier.fillMaxWidth().padding(horizontal=20.dp,vertical=4.dp),horizontalArrangement=Arrangement.spacedBy(8.dp)){
+                CatalogPicker(tr(R.string.chart_source),listOf("youtube" to "YouTube","apple" to "Apple Music","echo" to "Echo"),model.provider,{model.select(provider=it)},Modifier.weight(1f))
+                if(model.provider=="echo")CatalogPicker(tr(R.string.chart_period),listOf(7 to tr(R.string.chart_week),30 to tr(R.string.chart_month),0 to tr(R.string.chart_all_time)),model.days,{model.select(days=it)},Modifier.weight(1f))
+                else CatalogPicker(tr(R.string.chart_region),(if(model.provider=="youtube")listOf("global","hk","tw","jp") else listOf("hk","tw","jp")).map{it to regionLabel(it)},model.region,{model.select(region=it)},Modifier.weight(1f))
             }
-        }else Row(Modifier.fillMaxWidth().padding(start=20.dp,end=16.dp,top=2.dp,bottom=4.dp),verticalAlignment=Alignment.CenterVertically){
-            Text(tr(R.string.release_order),fontSize=12.sp,color=Secondary,modifier=Modifier.weight(1f).padding(end=10.dp))
-            SecondaryPill(tr(R.string.follow_artists),{follows=true},icon=Icons.Rounded.PersonAdd,height=36.dp)
         }
         PullToRefreshBox(model.loading,{model.load(refresh=true)},Modifier.weight(1f)){
             LazyColumn(state=state,modifier=Modifier.fillMaxSize(),contentPadding=PaddingValues(bottom=28.dp)){
+                if(section=="releases")item{
+                    Row(Modifier.fillMaxWidth().padding(start=20.dp,end=16.dp,top=2.dp,bottom=4.dp),verticalAlignment=Alignment.CenterVertically){
+                        Text(tr(R.string.release_order),fontSize=12.sp,color=Secondary,modifier=Modifier.weight(1f).padding(end=10.dp))
+                        SecondaryPill(tr(R.string.follow_artists),{follows=true},icon=Icons.Rounded.PersonAdd,height=36.dp)
+                    }
+                }
                 item{
                     Column(Modifier.padding(start=20.dp,end=20.dp,top=8.dp,bottom=8.dp)){
                         Text(when{section=="releases"->tr(R.string.release_source);model.provider=="youtube"->tr(R.string.chart_youtube_title);model.provider=="apple"->tr(R.string.chart_apple_title);else->tr(R.string.chart_echo_title)},fontFamily=EchoTitleFont,fontSize=20.sp,fontWeight=FontWeight.Bold)
@@ -138,8 +144,22 @@ private fun regionLabel(id:String)=when(id){"global"->tr(R.string.chart_global);
     if(follows)FullSheet({follows=false;model.load()}){dismiss->ArtistFollowsScreen({dismiss();model.load()},message)}
 }
 
-@Composable private fun ScopeTab(label:String,selected:Boolean,click:()->Unit){
-    TextButton(onClick=click){Text(label,fontSize=14.sp,fontWeight=if(selected)FontWeight.ExtraBold else FontWeight.SemiBold,color=if(selected)TextBright else TextBright.copy(alpha=.5f))}
+@Composable private fun <T> CatalogPicker(label:String,options:List<Pair<T,String>>,selected:T,select:(T)->Unit,modifier:Modifier=Modifier){
+    var expanded by remember{mutableStateOf(false)}
+    val current=options.firstOrNull{it.first==selected}?.second.orEmpty()
+    val fontScale=androidx.compose.ui.platform.LocalDensity.current.fontScale
+    val minimumHeight=if(fontScale>1.15f)(40f*fontScale+12f).dp else 48.dp
+    Box(modifier){
+        Row(Modifier.fillMaxWidth().heightIn(min=minimumHeight).clip(RoundedCornerShape(12.dp)).background(Glass)
+            .semantics{contentDescription="$label: $current"}.clickable(role=Role.Button){expanded=true}.padding(horizontal=14.dp,vertical=6.dp),verticalAlignment=Alignment.CenterVertically){
+            Text(current,fontSize=14.sp,lineHeight=20.sp,fontWeight=FontWeight.Bold,maxLines=2,overflow=TextOverflow.Ellipsis,modifier=Modifier.weight(1f))
+            Icon(Icons.Rounded.KeyboardArrowDown,null,Modifier.padding(start=6.dp).size(20.dp),tint=Secondary)
+        }
+        DropdownMenu(expanded,{expanded=false},modifier=Modifier.widthIn(min=176.dp),containerColor=Panel){
+            options.forEach{(id,title)->DropdownMenuItem(text={Text(title,fontWeight=if(id==selected)FontWeight.Bold else FontWeight.Normal)},
+                trailingIcon={if(id==selected)Icon(Icons.Rounded.Check,null,Modifier.size(18.dp))},onClick={expanded=false;select(id)})}
+        }
+    }
 }
 
 @Composable private fun ChartCover(row:JSONObject,song:Song?,size:Int,radius:Int){
