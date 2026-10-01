@@ -2,8 +2,15 @@
 
 [繁體中文](../README.md) · [Download Android](https://github.com/ab003317/Echo/releases/latest) · [.env configuration](configuration.en.md) · [AI providers](ai-providers.md)
 
-Echo is a music server and Android player with background playback, offline music,
-daily discovery and recommendations informed by listening behavior.
+Echo is a **self-hosted music server and Android music player** for Docker and NAS,
+with background streaming, automatic Wi-Fi downloads, offline playback, YouTube
+search and imports, AI recommendations and daily playlists.
+
+Designed as a self-hosted YouTube Music alternative for Android listeners who
+manage music on their own server. The server manages the library and recommendations;
+the phone downloads music for offline listening according to the selected settings.
+
+## Features
 
 - Background and lock-screen playback, queue, shuffle, repeat and listening history.
 - Automatic Wi-Fi downloads from recent, frequent, favorite and recommended music,
@@ -16,6 +23,8 @@ daily discovery and recommendations informed by listening behavior.
   from followed artists.
 - AI uses listening time, repeats, completion and intentional skips.
   **Song titles are never treated as evidence of genre.**
+- Optional AI through Gemini, OpenAI, DeepSeek, Qwen or a custom OpenAI-compatible
+  API, with multiple API keys. Basic playback and offline downloads work without AI.
 - Traditional Chinese and English in the app and deployment documentation.
 
 ## App screenshots

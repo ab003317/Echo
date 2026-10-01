@@ -4,7 +4,13 @@
 
 <img src="assets/brand/echo-icon.png" width="144" alt="Echo">
 
-Echo 是音樂伺服器與 Android 播放器，支援背景播放、離線保存、每日探索及個人化推薦。
+Echo 是可透過 Docker 部署在私人伺服器或 NAS 的自架音樂伺服器，搭配 Android 音樂播放器。支援背景串流播放、Wi-Fi 自動離線下載、YouTube 搜尋與匯入、AI 個人化推薦及每日自動歌單。
+
+Echo is a **self-hosted music server and Android music player** for Docker and NAS, with automatic Wi-Fi downloads, offline playback, YouTube imports, AI recommendations and daily playlists. [English documentation](docs/README.en.md).
+
+適合已有私人伺服器／NAS、想以自己的音樂庫替代 YouTube Music 日常聆聽流程的 Android 使用者。音樂與推薦由伺服器管理，手機按設定保存可離線播放的歌曲。
+
+## 主要功能
 
 - 背景與鎖定畫面播放、播放佇列、隨機、單曲／清單循環、播放記錄。
 - Wi-Fi 自動保存最近聆聽、最常聆聽、最愛及推薦歌曲；可設定容量、手動保留或刪除。
@@ -12,6 +18,7 @@ Echo 是音樂伺服器與 Android 播放器，支援背景播放、離線保存
 - 每日產生歌手、系列、曲風及隨機歌單；收藏後固定保留。曲風分類需要實際音訊證據。
 - YouTube／Apple Music 地區榜單、Echo 播放排行，以及已關注歌手的新發行。
 - AI 依實際聆聽秒數、重播、完成與主動跳過分析；**不以歌名猜測曲風**。
+- AI 可選用 Gemini、OpenAI、DeepSeek、Qwen 或自訂 OpenAI 相容 API，支援多組 API key；基本播放與離線保存不需要 AI。
 - App 與部署文件提供繁體中文／English。
 
 ## App 畫面
