@@ -152,7 +152,8 @@ class MainActivity : ComponentActivity() {
             listOf(tr(R.string.ui_listen) to Icons.Outlined.Headphones,tr(R.string.ui_discover_78) to Icons.Outlined.Explore,tr(R.string.ui_library) to Icons.Outlined.LibraryMusic,tr(R.string.ui_downloads) to Icons.Outlined.FileDownload).forEachIndexed{i,item->
                 val tint by animateColorAsState(if(tab==i)TextBright else Muted,label="navigation")
                 Column(Modifier.weight(1f).selectable(selected=tab==i,role=Role.Tab,onClick={navigate(i)}).padding(vertical=5.dp),horizontalAlignment=Alignment.CenterHorizontally){
-                    Icon(item.second,item.first,Modifier.size(22.dp),tint=tint)
+                    val selection by animateColorAsState(if(tab==i)Raised else Color.Transparent,label="navigation surface")
+                    Box(Modifier.size(width=54.dp,height=32.dp).background(selection,RoundedCornerShape(16.dp)),contentAlignment=Alignment.Center){Icon(item.second,item.first,Modifier.size(21.dp),tint=tint)}
                     Text(item.first,fontSize=11.sp,lineHeight=15.sp,fontWeight=if(tab==i)FontWeight.SemiBold else FontWeight.Normal,color=tint,modifier=Modifier.padding(top=4.dp))
                 }
             }
@@ -165,11 +166,13 @@ class MainActivity : ComponentActivity() {
             userScrollEnabled=!expanded && !settings && !queue && !historyOpen && !mixesOpen && selectedMix==null && selected==null){page->
         CompositionLocalProvider(LocalArtworkActive provides (page==pager.currentPage || page==pager.targetPage)){
         Column(Modifier.fillMaxSize()){
-        if(page==0)Row(Modifier.fillMaxWidth().padding(start=24.dp,end=12.dp,top=2.dp,bottom=4.dp),verticalAlignment=Alignment.CenterVertically){
-            Text("Echo",fontFamily=EchoLatinTitle,fontSize=23.sp,fontWeight=FontWeight.Medium,letterSpacing=(-.7).sp,modifier=Modifier.weight(1f))
-            if(!Library.online) Icon(Icons.Rounded.CloudOff,tr(R.string.ui_offline),Modifier.size(18.dp),tint=Muted)
-            IconButton(onClick={historyOpen=true}){Icon(Icons.Outlined.History,tr(R.string.ui_listening_history),Modifier.size(21.dp),tint=Muted)}
-            IconButton(onClick={settings=true}){Icon(Icons.Outlined.Tune,tr(R.string.ui_settings),Modifier.size(21.dp),tint=Muted)}
+        if(page==0)Row(Modifier.fillMaxWidth().padding(horizontal=24.dp,vertical=12.dp),verticalAlignment=Alignment.CenterVertically){
+            EchoWordmark(Modifier.weight(1f))
+            if(!Library.online) Icon(Icons.Rounded.CloudOff,tr(R.string.ui_offline),Modifier.padding(end=12.dp).size(18.dp),tint=Muted)
+            HeaderActions{
+                IconButton(onClick={historyOpen=true}){Icon(Icons.Outlined.History,tr(R.string.ui_listening_history),Modifier.size(21.dp),tint=TextBright)}
+                IconButton(onClick={settings=true}){Icon(Icons.Outlined.Settings,tr(R.string.ui_settings),Modifier.size(21.dp),tint=TextBright)}
+            }
         }
         when(page){
             0->ListenScreen(songs,current,refreshing,{refresh(true)},playAction,{s->menu(s,"")},{navigate(1)},editions,{mixesOpen=true},{selectedMix=it},mixes::toggle,{historyOpen=true})

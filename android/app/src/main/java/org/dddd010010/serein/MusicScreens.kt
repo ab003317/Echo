@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -37,13 +38,15 @@ import java.io.File
     PullToRefreshBox(refreshing,refresh,Modifier.fillMaxSize()){
         LazyColumn(state=rememberLazyListState(),contentPadding=PaddingValues(bottom=20.dp)){
             if(hero!=null)item{
-                val height=(LocalConfiguration.current.screenWidthDp*.82f).coerceIn(250f,340f).dp
-                Box(Modifier.fillMaxWidth().height(height).clickable{play(recs,0)}){
-                    Artwork(hero,Modifier.fillMaxSize(),0)
-                    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Night.copy(alpha=.04f),.28f to Color.Transparent,.65f to Night.copy(alpha=.45f),1f to Night)))
-                    Row(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(start=24.dp,end=24.dp,bottom=12.dp),verticalAlignment=Alignment.Bottom){
+                val sleeve=(LocalConfiguration.current.screenWidthDp*.70f).coerceIn(200f,320f).dp
+                val tone by androidx.compose.animation.animateColorAsState(ArtworkImages.tone(hero),animationSpec=androidx.compose.animation.core.tween(650),label="listening stage")
+                Column(Modifier.fillMaxWidth().background(Brush.verticalGradient(listOf(Night,lerp(Night,tone,.24f),Night))).padding(top=12.dp,bottom=4.dp)){
+                    Box(Modifier.align(Alignment.CenterHorizontally).size(sleeve).clip(RoundedCornerShape(8.dp)).clickable{play(recs,0)}){
+                        Artwork(hero,Modifier.fillMaxSize(),8,tone=true)
+                    }
+                    Row(Modifier.fillMaxWidth().padding(start=24.dp,end=24.dp,top=22.dp,bottom=4.dp),verticalAlignment=Alignment.CenterVertically){
                         Column(Modifier.weight(1f).padding(end=16.dp)){
-                            Text(hero.title,fontFamily=EchoTitleFont,fontSize=32.sp,fontWeight=FontWeight.SemiBold,letterSpacing=0.sp,maxLines=2,lineHeight=37.sp,overflow=TextOverflow.Ellipsis)
+                            Text(hero.title,fontFamily=EchoTitleFont,fontSize=30.sp,fontWeight=EchoPageWeight,letterSpacing=0.sp,maxLines=2,lineHeight=38.sp,overflow=TextOverflow.Ellipsis)
                             Text(hero.artist,fontSize=14.sp,color=TextBright.copy(alpha=.72f),maxLines=1,overflow=TextOverflow.Ellipsis,modifier=Modifier.padding(top=7.dp))
                         }
                         FilledIconButton(onClick={play(recs,0)},modifier=Modifier.size(54.dp),colors=IconButtonDefaults.filledIconButtonColors(containerColor=TextBright,contentColor=Night)){
@@ -99,9 +102,9 @@ import java.io.File
     LaunchedEffect(criteria){if(previousCriteria!=criteria){state.scrollToItem(0);previousCriteria=criteria}}
     BackHandler(active && (group.isNotBlank() || query.isNotBlank())){if(group.isNotBlank())group="" else query=""}
     Column {
-        Row(Modifier.fillMaxWidth().padding(start=22.dp,end=10.dp,top=6.dp,bottom=16.dp),verticalAlignment=Alignment.CenterVertically){
-            Text(tr(R.string.ui_library),fontFamily=EchoTitleFont,fontSize=30.sp,fontWeight=FontWeight.Medium,letterSpacing=0.sp,modifier=Modifier.weight(1f));Text(tr(R.string.ui_tracks_89, songs.size),fontSize=12.sp,color=Muted)
-            IconButton(onClick={create=true}){Icon(Icons.Rounded.PlaylistAdd,tr(R.string.ui_new_playlist),Modifier.size(22.dp))}
+        Row(Modifier.fillMaxWidth().padding(horizontal=24.dp,vertical=12.dp),verticalAlignment=Alignment.CenterVertically){
+            PageTitle(tr(R.string.ui_library),Modifier.weight(1f));Text(tr(R.string.ui_tracks_89, songs.size),fontSize=12.sp,color=Muted,modifier=Modifier.padding(end=12.dp))
+            HeaderActions{IconButton(onClick={create=true}){Icon(Icons.Rounded.PlaylistAdd,tr(R.string.ui_new_playlist),Modifier.size(22.dp))}}
         }
         SearchBox(query,{query=it},tr(R.string.ui_search_songs_artists_and_albums))
         LazyRow(contentPadding=PaddingValues(horizontal=22.dp,vertical=10.dp),horizontalArrangement=Arrangement.spacedBy(7.dp)){
@@ -154,7 +157,7 @@ private fun albumKey(s:Song)=s.artist+"\u001f"+s.album
     val waiting=songs.filter{!Library.downloaded(it) && (it.id in Library.pinned || it.id==Library.activeDownload || it.id in Library.partialFiles)}
     var filter by rememberSaveable{mutableStateOf("ui_all")}
     LazyColumn(state=rememberLazyListState(),contentPadding=PaddingValues(bottom=24.dp)){
-        item{Row(Modifier.fillMaxWidth().padding(start=24.dp,end=14.dp,top=12.dp,bottom=20.dp),verticalAlignment=Alignment.CenterVertically){Text(tr(R.string.ui_offline_music),fontFamily=EchoTitleFont,fontSize=30.sp,fontWeight=FontWeight.Medium,letterSpacing=0.sp,modifier=Modifier.weight(1f));TextButton(onClick=settings){Text(tr(R.string.ui_download_settings),fontSize=12.sp,color=Muted)}}}
+        item{Row(Modifier.fillMaxWidth().padding(start=24.dp,end=14.dp,top=12.dp,bottom=16.dp),verticalAlignment=Alignment.CenterVertically){PageTitle(tr(R.string.ui_offline_music),Modifier.weight(1f));TextButton(onClick=settings){Text(tr(R.string.ui_download_settings),fontSize=12.sp,color=Muted)}}}
         item{Column(Modifier.padding(horizontal=24.dp).fillMaxWidth().padding(vertical=12.dp)){
             Row(verticalAlignment=Alignment.Bottom){Text(size(Library.offlineBytes),fontFamily=EchoTitleFont,fontSize=36.sp,fontWeight=FontWeight.Normal,letterSpacing=0.sp);Text(" / ${size(Library.budget)}",fontSize=13.sp,color=Muted,modifier=Modifier.padding(bottom=6.dp))}
             LinearProgressIndicator(progress={(Library.offlineBytes.toFloat()/Library.budget).coerceIn(0f,1f)},modifier=Modifier.fillMaxWidth().padding(vertical=14.dp).height(3.dp),color=Gold,trackColor=Raised)

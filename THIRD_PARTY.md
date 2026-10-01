@@ -6,8 +6,8 @@ notice does not replace their full license texts.
 
 - Manrope font — SIL Open Font License 1.1.
   [Bundled license](android/app/src/main/assets/licenses/Manrope-OFL.txt).
-- Space Grotesk / Noto Sans TC — SIL Open Font License 1.1.
-  [Space Grotesk license](android/app/src/main/assets/licenses/SpaceGrotesk-OFL.txt),
+- Outfit / Noto Sans TC — SIL Open Font License 1.1.
+  [Outfit license](android/app/src/main/assets/licenses/Outfit-OFL.txt),
   [Noto Sans TC license](android/app/src/main/assets/licenses/NotoSansTC-OFL.txt).
 - AndroidX / Compose / Media3 / WorkManager — Apache-2.0.
   [Android source](https://android.googlesource.com/platform/frameworks/support/).

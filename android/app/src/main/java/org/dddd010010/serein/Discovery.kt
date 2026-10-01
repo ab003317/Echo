@@ -166,10 +166,12 @@ class DiscoveryModel:ViewModel(){
         }
     }
     Column {
-        Row(Modifier.padding(start=24.dp,end=8.dp,top=8.dp,bottom=18.dp),verticalAlignment=Alignment.CenterVertically){
-            Text(tr(R.string.ui_discover),fontFamily=EchoTitleFont,fontSize=28.sp,fontWeight=FontWeight.Medium,letterSpacing=0.sp,modifier=Modifier.weight(1f))
+        Row(Modifier.padding(horizontal=24.dp,vertical=12.dp),verticalAlignment=Alignment.CenterVertically){
+            PageTitle(tr(R.string.ui_discover),Modifier.weight(1f))
+            HeaderActions{
             IconButton(onClick={tasks=true}){BadgedBox(badge={val active=model.jobs.count{it.optString("status") in listOf("queued","downloading")};if(active>0)Badge{Text(active.toString())}}){Icon(Icons.Rounded.PlaylistAddCheck,tr(R.string.ui_imports))}}
             IconButton(onClick={link=true}){Icon(Icons.Rounded.AddLink,tr(R.string.ui_paste_a_link))}
+            }
         }
         SearchBox(model.query,{model.query=it},tr(R.string.ui_song_artist_or_youtube_link),submit={
             if(model.query.trim().startsWith("https://"))model.add(model.query.trim(),message=message) else {section=model.mode;model.search();scope.launch{listState.scrollToItem(0)}}
@@ -225,9 +227,11 @@ class DiscoveryModel:ViewModel(){
                 val context=androidx.compose.ui.platform.LocalContext.current
                 val active=LocalArtworkActive.current
                 var started by remember(song.cover){mutableStateOf(false)}
-                LaunchedEffect(active){if(active)started=true}
+                LaunchedEffect(song.cover,active){if(active)started=true}
                 val request=remember(song.cover){coil.request.ImageRequest.Builder(context).data(song.cover).build()}
-                if(started)AsyncImage(request,null,Modifier.fillMaxSize(),contentScale=ContentScale.Crop)
+                var failed by remember(song.cover){mutableStateOf(false)}
+                val record=rememberRecordArtwork(song.artist+song.title,song.cover.isBlank() || failed)
+                if(started)AsyncImage(request,null,Modifier.fillMaxSize(),placeholder=record,error=record,fallback=record,contentScale=ContentScale.Crop,onError={failed=true},onSuccess={failed=false})
             }
             if(song.duration>0)Text(timeLabel((song.duration*1000).toLong()),color=TextBright,fontSize=10.sp,modifier=Modifier.align(Alignment.TopEnd).padding(7.dp).background(Night.copy(alpha=.68f),RoundedCornerShape(4.dp)).padding(horizontal=6.dp,vertical=3.dp))
             IconButton(onClick=if(state=="complete")play else add,enabled=state!in listOf("queued","downloading"),modifier=Modifier.align(Alignment.BottomEnd).padding(4.dp)){

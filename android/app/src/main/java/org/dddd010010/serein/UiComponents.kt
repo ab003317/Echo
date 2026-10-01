@@ -33,6 +33,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -66,14 +67,29 @@ val SereinFont=FontFamily(
     Font(R.font.manrope,FontWeight.Bold,variationSettings=FontVariation.Settings(FontVariation.weight(700)))
 )
 val EchoLatinTitle=FontFamily(
-    Font(R.font.space_grotesk,FontWeight.Medium,variationSettings=FontVariation.Settings(FontVariation.weight(500))),
-    Font(R.font.space_grotesk,FontWeight.SemiBold,variationSettings=FontVariation.Settings(FontVariation.weight(600)))
+    Font(R.font.outfit,FontWeight.Normal,variationSettings=FontVariation.Settings(FontVariation.weight(400))),
+    Font(R.font.outfit,FontWeight.Medium,variationSettings=FontVariation.Settings(FontVariation.weight(500))),
+    Font(R.font.outfit,FontWeight.SemiBold,variationSettings=FontVariation.Settings(FontVariation.weight(600)))
 )
 val EchoChineseTitle=FontFamily(
+    Font(R.font.noto_sans_tc,FontWeight.Normal,variationSettings=FontVariation.Settings(FontVariation.weight(400))),
     Font(R.font.noto_sans_tc,FontWeight.Medium,variationSettings=FontVariation.Settings(FontVariation.weight(500))),
     Font(R.font.noto_sans_tc,FontWeight.SemiBold,variationSettings=FontVariation.Settings(FontVariation.weight(600)))
 )
 val EchoTitleFont:FontFamily get()=if(AppLocale.language=="en")EchoLatinTitle else EchoChineseTitle
+val EchoPageWeight:FontWeight get()=if(AppLocale.language=="en")FontWeight.Medium else FontWeight.Normal
+
+@Composable fun PageTitle(title:String,modifier:Modifier=Modifier){
+    Text(title,modifier=modifier,fontFamily=EchoTitleFont,fontSize=32.sp,lineHeight=40.sp,
+        fontWeight=EchoPageWeight,letterSpacing=if(AppLocale.language=="en")(-.6).sp else .4.sp)
+}
+@Composable fun HeaderActions(content:@Composable RowScope.()->Unit){
+    Row(Modifier.clip(RoundedCornerShape(16.dp)).background(Panel),verticalAlignment=Alignment.CenterVertically,content=content)
+}
+@Composable fun EchoWordmark(modifier:Modifier=Modifier){
+    Text("Echo",modifier=modifier,fontFamily=EchoLatinTitle,fontSize=36.sp,lineHeight=42.sp,
+        fontWeight=FontWeight.Medium,letterSpacing=(-1.3).sp,style=TextStyle(platformStyle=PlatformTextStyle(includeFontPadding=false)))
+}
 
 @Composable fun SereinTheme(content:@Composable ()->Unit){
     MaterialTheme(colorScheme=darkColorScheme(primary=Gold,onPrimary=Night,primaryContainer=Raised,onPrimaryContainer=TextBright,
@@ -138,23 +154,24 @@ val EchoTitleFont:FontFamily get()=if(AppLocale.language=="en")EchoLatinTitle el
         Box(Modifier.width(22.dp).height(2.dp).background(if(selected)TextBright else Color.Transparent,CircleShape))
     }
 }
-@Composable fun SheetTitle(title:String,close:()->Unit){Row(Modifier.fillMaxWidth().padding(start=22.dp,end=8.dp),verticalAlignment=Alignment.CenterVertically){Text(title,fontFamily=EchoTitleFont,fontSize=23.sp,fontWeight=FontWeight.SemiBold,modifier=Modifier.weight(1f));IconButton(onClick=close){Icon(Icons.Rounded.Close,tr(R.string.ui_close))}}}
-@Composable fun Heading(title:String,action:String?=null,onClick:()->Unit={}){Row(Modifier.fillMaxWidth().padding(start=24.dp,end=14.dp,top=18.dp,bottom=12.dp),verticalAlignment=Alignment.CenterVertically){Text(title,fontFamily=EchoTitleFont,fontSize=21.sp,fontWeight=FontWeight.Medium,letterSpacing=0.sp,modifier=Modifier.weight(1f));if(action!=null)TextButton(onClick=onClick){Text(action,fontSize=12.sp,color=Muted)}}}
+@Composable fun SheetTitle(title:String,close:()->Unit){Row(Modifier.fillMaxWidth().padding(start=24.dp,end=12.dp,top=8.dp,bottom=8.dp),verticalAlignment=Alignment.CenterVertically){Text(title,fontFamily=EchoTitleFont,fontSize=24.sp,lineHeight=32.sp,fontWeight=EchoPageWeight,modifier=Modifier.weight(1f));IconButton(onClick=close){Icon(Icons.Rounded.Close,tr(R.string.ui_close),Modifier.size(22.dp),tint=Muted)}}}
+@Composable fun Heading(title:String,action:String?=null,onClick:()->Unit={}){Row(Modifier.fillMaxWidth().padding(start=24.dp,end=14.dp,top=22.dp,bottom=12.dp),verticalAlignment=Alignment.CenterVertically){Text(title,fontFamily=EchoTitleFont,fontSize=20.sp,lineHeight=28.sp,fontWeight=FontWeight.Medium,letterSpacing=0.sp,modifier=Modifier.weight(1f));if(action!=null)TextButton(onClick=onClick){Text(action,fontSize=12.sp,color=Muted)}}}
 @Composable fun EmptyState(title:String,body:String,action:String?=null,click:()->Unit={}){Column(Modifier.fillMaxWidth().padding(horizontal=28.dp,vertical=40.dp),horizontalAlignment=Alignment.CenterHorizontally){Icon(Icons.Rounded.GraphicEq,null,Modifier.size(38.dp),tint=Muted);Text(title,fontSize=19.sp,fontWeight=FontWeight.Medium,modifier=Modifier.padding(top=18.dp));Text(body,color=Muted,fontSize=13.sp,lineHeight=21.sp,modifier=Modifier.padding(top=10.dp));if(action!=null)TextButton(onClick=click,modifier=Modifier.padding(top=8.dp)){Text(action)}}}
 @Composable fun Artwork(song:Song?,modifier:Modifier=Modifier,radius:Int=4,tone:Boolean=false,priority:Boolean=tone){Box(modifier.clip(RoundedCornerShape(radius.dp)).background(Raised),contentAlignment=Alignment.Center){
-    Icon(Icons.Rounded.Album,null,Modifier.fillMaxSize(.4f),tint=Muted.copy(alpha=.5f))
+    var failed by remember(song?.id,song?.mtime,Library.base){mutableStateOf(false)}
+    val record=rememberRecordArtwork(song?.let{it.artist+it.album+it.title} ?: "Echo",song?.hasCover!=true || failed)
     if(song!=null && song.hasCover){
         val context=LocalContext.current
         val active=LocalArtworkActive.current
         var started by remember(song.id){mutableStateOf(false)}
-        LaunchedEffect(active){if(active)started=true}
+        LaunchedEffect(song.id,active){if(active)started=true}
         val local=song.id in Library.coverFiles
         val base=Library.base
         val request=remember(song,local,base,tone,priority){ArtworkImages.request(context,song,local,tone,priority)}
         val scope=rememberCoroutineScope()
-        if(started)AsyncImage(request,tr(R.string.ui_cover_for,song.title),contentScale=ContentScale.Crop,modifier=Modifier.fillMaxSize(),
-            onSuccess={if(tone)scope.launch{ArtworkImages.sample(song,it.result.drawable)}})
-    }
+        if(started)AsyncImage(request,tr(R.string.ui_cover_for,song.title),placeholder=record,error=record,fallback=record,contentScale=ContentScale.Crop,modifier=Modifier.fillMaxSize(),
+            onError={failed=true},onSuccess={failed=false;if(tone)scope.launch{ArtworkImages.sample(song,it.result.drawable)}})
+    }else Image(record,null,Modifier.fillMaxSize(),contentScale=ContentScale.Crop)
 }}
 @Composable fun SongRow(song:Song,play:()->Unit,menu:()->Unit,subtitle:String=song.artist,trailing:@Composable (() -> Unit)?=null){Row(Modifier.fillMaxWidth().clickable(onClick=play).padding(start=22.dp,end=8.dp,top=7.dp,bottom=7.dp),verticalAlignment=Alignment.CenterVertically){
     Artwork(song,Modifier.size(52.dp),4)

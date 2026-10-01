@@ -14,6 +14,29 @@ Echo 是音樂伺服器與 Android 播放器，支援背景播放、離線保存
 - AI 依實際聆聽秒數、重播、完成與主動跳過分析；**不以歌名猜測曲風**。
 - App 與部署文件提供繁體中文／English。
 
+## App 畫面
+
+Echo 0.9.2 實際畫面，使用示範音樂庫。點擊圖片可查看完整尺寸。
+
+| 首頁與每日歌單 | 播放器 | 播放佇列 |
+| --- | --- | --- |
+| [<img src="docs/screenshots/zh-Hant/home.png" width="230" alt="Echo 首頁：推薦歌曲與流動歌單">](docs/screenshots/zh-Hant/home.png) | [<img src="docs/screenshots/zh-Hant/player.png" width="230" alt="Echo 播放器：封面、進度、循環與睡眠定時">](docs/screenshots/zh-Hant/player.png) | [<img src="docs/screenshots/zh-Hant/queue.png" width="230" alt="Echo 播放佇列：拖曳排序與曲目選單">](docs/screenshots/zh-Hant/queue.png) |
+| 推薦歌曲與每日輪換的歌單集中在首頁；喜歡的歌單可永久保存。 | 調整播放進度、隨機與循環模式，加入最愛或設定睡眠定時；支援背景播放。 | 長按拖曳調整順序，透過曲目選單移除歌曲；標示目前播放的曲目。 |
+
+| 發現下一首 | 榜單 | 離線保存 |
+| --- | --- | --- |
+| [<img src="docs/screenshots/zh-Hant/discover.png" width="230" alt="Echo 發現頁：為你與新鮮感推薦">](docs/screenshots/zh-Hant/discover.png) | [<img src="docs/screenshots/zh-Hant/charts.png" width="230" alt="Echo 榜單：來源、地區、日期及歌曲排名">](docs/screenshots/zh-Hant/charts.png) | [<img src="docs/screenshots/zh-Hant/downloads.png" width="230" alt="Echo 離線音樂：容量、保存狀態與已下載歌曲">](docs/screenshots/zh-Hant/downloads.png) |
+| 探索已入庫、可即播的歌曲，下拉刷新並向下瀏覽更多內容；另支援 YouTube 搜尋與連結匯入。 | 切換 YouTube、Apple Music 與 Echo 播放排行；「新發行」按已關注歌手的發行日期排列歌曲。 | 查看手機已保存的歌曲與容量；Wi-Fi 自動保存來源及容量上限可在下載設定調整。 |
+
+<details>
+<summary>沒有封面的音樂</summary>
+
+缺少封面時，顯示唱片與 20 款黑白 doodle 背景之一；同一首歌的背景保持一致。
+
+[<img src="docs/screenshots/zh-Hant/no-cover.png" width="280" alt="Echo 無封面畫面：黑白唱片與不同 doodle 背景">](docs/screenshots/zh-Hant/no-cover.png)
+
+</details>
+
 取歌、排序公式、AI 提示詞及現有限制見[音樂來源、選歌與 AI](docs/recommendation-engine.md)。
 
 每個部署共用一份音樂庫、播放記錄與推薦偏好，沒有獨立使用者帳戶或 App 存取金鑰。能連到伺服器的人均可操作；存取限制由私人網路或反向代理設定。

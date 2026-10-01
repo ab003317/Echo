@@ -18,6 +18,29 @@ daily discovery and recommendations informed by listening behavior.
   **Song titles are never treated as evidence of genre.**
 - Traditional Chinese and English in the app and deployment documentation.
 
+## App screenshots
+
+Captured from Echo 0.9.2 with a demonstration library. Select an image to view it at full size.
+
+| Home and daily mixes | Player | Playback queue |
+| --- | --- | --- |
+| [<img src="screenshots/en/home.png" width="230" alt="Echo home with recommended music and daily mixes">](screenshots/en/home.png) | [<img src="screenshots/en/player.png" width="230" alt="Echo player with artwork, playback controls and sleep timer">](screenshots/en/player.png) | [<img src="screenshots/en/queue.png" width="230" alt="Echo queue with drag handles and track menus">](screenshots/en/queue.png) |
+| Browse recommendations and daily rotating mixes. Save a mix to keep it permanently. | Seek, shuffle, repeat, favorite tracks and set a sleep timer. Playback continues in the background. | Drag to reorder tracks, remove them from the track menu, and see what is playing. |
+
+| Discover | Charts | Offline music |
+| --- | --- | --- |
+| [<img src="screenshots/en/discover.png" width="230" alt="Echo Discover with For You and Explore recommendations">](screenshots/en/discover.png) | [<img src="screenshots/en/charts.png" width="230" alt="Echo charts with source, region, date and song rankings">](screenshots/en/charts.png) | [<img src="screenshots/en/downloads.png" width="230" alt="Echo offline music with storage usage and downloaded tracks">](screenshots/en/downloads.png) |
+| Explore prepared, playable library tracks. Pull to refresh or scroll for more; YouTube search and link imports are also available. | Switch between YouTube, Apple Music and Echo listening rankings. New releases lists followed artists' songs by release date. | View downloaded tracks and storage usage. Choose automatic Wi-Fi download sources and a storage limit in download settings. |
+
+<details>
+<summary>Music without cover art</summary>
+
+Missing covers use a record with one of 20 monochrome doodle backgrounds. Each track keeps the same background across screens.
+
+[<img src="screenshots/en/no-cover.png" width="280" alt="Echo without cover art: monochrome records over varied doodle backgrounds">](screenshots/en/no-cover.png)
+
+</details>
+
 See [Music sources, selection and AI](recommendation-engine.en.md) for the
 retrieval pipeline, ranking formula, actual prompts and current limitations.
 

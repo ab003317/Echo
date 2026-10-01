@@ -142,7 +142,12 @@ private fun regionLabel(id:String)=when(id){"global"->tr(R.string.chart_global);
     Row(Modifier.fillMaxWidth().clickable(enabled=!busy,onClick=action).padding(start=24.dp,end=12.dp,top=10.dp,bottom=10.dp),verticalAlignment=Alignment.CenterVertically){
         if(ranked)Text(row.optInt("rank").toString(),fontFamily=EchoLatinTitle,fontSize=19.sp,color=Muted,modifier=Modifier.width(34.dp))
         if(song!=null)Artwork(song,Modifier.size(48.dp),5)
-        else AsyncImage(row.optString("cover"),null,Modifier.size(48.dp).clip(RoundedCornerShape(5.dp)).background(Panel),contentScale=ContentScale.Crop)
+        else {
+            val cover=row.optString("cover")
+            var failed by remember(cover){mutableStateOf(false)}
+            val record=rememberRecordArtwork(row.optString("artist")+row.optString("title"),cover.isBlank() || failed)
+            AsyncImage(cover,null,Modifier.size(48.dp).clip(RoundedCornerShape(5.dp)).background(Panel),placeholder=record,error=record,fallback=record,contentScale=ContentScale.Crop,onError={failed=true},onSuccess={failed=false})
+        }
         Column(Modifier.weight(1f).padding(start=13.dp,end=4.dp)){
             Text(row.optString("title"),fontSize=15.sp,fontWeight=FontWeight.Medium,maxLines=2,overflow=TextOverflow.Ellipsis,lineHeight=20.sp)
             Text(row.optString("artist"),fontSize=12.sp,color=Muted,maxLines=1,overflow=TextOverflow.Ellipsis,modifier=Modifier.padding(top=4.dp))

@@ -43,7 +43,7 @@ object ArtworkImages {
         .memoryCacheKey(key(song)).diskCacheKey(key(song))
         .addHeader("User-Agent","Echo/0.7").addHeader("X-Echo-Image-Priority",if(priority)"playback" else "list")
         .allowHardware(!tone).build()
-    fun tone(song:Song)=tones[key(song)] ?: Panel
+    fun tone(song:Song)=(if(song.hasCover)tones[key(song)] else null) ?: RecordFallbackTone
     suspend fun sample(song:Song,drawable:Drawable){
         val key=key(song)
         if(key in tones)return

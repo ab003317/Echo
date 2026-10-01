@@ -27,11 +27,9 @@ import java.time.format.DateTimeFormatter
 
 @Composable fun MixArtwork(mix:MixEdition,modifier:Modifier=Modifier){
     val covers=mix.songs.filter{it.hasCover}.distinctBy{it.artist+it.album.ifBlank{it.id}}.take(4)
-    BoxWithConstraints(modifier.clip(RoundedCornerShape(5.dp)).background(Panel)){
+    Box(modifier.clip(RoundedCornerShape(5.dp)).background(Panel)){
         if(covers.isEmpty()){
-            Icon(Icons.Rounded.Album,null,Modifier.align(Alignment.BottomStart).padding(14.dp).size(28.dp),tint=Muted)
-            Text(mix.title.take(2),fontSize=(maxWidth.value*.31f).coerceAtMost(64f).sp,fontWeight=FontWeight.Light,
-                color=TextBright.copy(alpha=.75f),maxLines=1,modifier=Modifier.align(Alignment.TopStart).padding(start=14.dp,top=8.dp))
+            Image(rememberRecordArtwork(mix.title),null,Modifier.fillMaxSize())
         }
         else if(covers.size<4)Artwork(covers.first(),Modifier.fillMaxSize(),0)
         else Column(Modifier.fillMaxSize(),verticalArrangement=Arrangement.spacedBy(2.dp)){
@@ -54,8 +52,8 @@ import java.time.format.DateTimeFormatter
                 MixArtwork(mix,Modifier.fillMaxSize())
                 SaveMix(mix,toggle,Modifier.align(Alignment.BottomEnd).padding(6.dp).background(Night.copy(alpha=.78f),CircleShape))
             }
-            Text(tr(R.string.ui_tracks, mix.label, mix.songs.size),color=Muted,fontSize=11.sp,modifier=Modifier.padding(top=12.dp))
-            Text(mix.title,fontSize=16.sp,fontWeight=FontWeight.Medium,maxLines=2,lineHeight=22.sp,overflow=TextOverflow.Ellipsis,modifier=Modifier.padding(top=4.dp))
+            Text(mix.title,fontFamily=EchoTitleFont,fontSize=18.sp,fontWeight=FontWeight.Medium,maxLines=2,lineHeight=24.sp,overflow=TextOverflow.Ellipsis,modifier=Modifier.padding(top=12.dp))
+            Text(tr(R.string.ui_tracks, mix.label, mix.songs.size),color=Muted,fontSize=11.sp,modifier=Modifier.padding(top=5.dp))
         }}
     }
 }
