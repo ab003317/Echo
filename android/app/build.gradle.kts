@@ -5,7 +5,7 @@ val signingValues = Properties().apply { if(signingFile.exists()) signingFile.in
 android {
     namespace = "org.dddd010010.serein"
     compileSdk = 36
-    defaultConfig { applicationId = "org.dddd010010.serein"; minSdk = 26; targetSdk = 36; versionCode = 12; versionName = "0.9.0"; resourceConfigurations += listOf("en", "zh-rTW", "b+zh+Hant") }
+    defaultConfig { applicationId = "org.dddd010010.serein"; minSdk = 26; targetSdk = 36; versionCode = 13; versionName = "0.9.1"; resourceConfigurations += listOf("en", "zh-rTW", "b+zh+Hant") }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     kotlinOptions { jvmTarget = "17" }
     buildFeatures { compose = true }
