@@ -22,6 +22,7 @@ notice does not replace their full license texts.
 - Mutagen — GPL-2.0-or-later. [Source](https://github.com/quodlibet/mutagen).
 - yt-dlp — Unlicense (some bundled components have separate licenses).
   [License](https://github.com/yt-dlp/yt-dlp/blob/master/LICENSE).
+- ytmusicapi — MIT. [Source](https://github.com/sigma67/ytmusicapi).
 - FFmpeg — LGPL/GPL depending on build configuration; Docker installs Debian's
   build. [Legal information](https://ffmpeg.org/legal.html).
 - Caddy — Apache-2.0. [Source](https://github.com/caddyserver/caddy).

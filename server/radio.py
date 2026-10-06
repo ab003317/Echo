@@ -9,6 +9,7 @@ import shutil
 import threading
 import time
 import uuid
+from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 from .settings import LOCAL_TZ, TIMEZONE
@@ -20,6 +21,8 @@ from .listening_report import build_report, period_metrics
 HK = LOCAL_TZ
 DEFAULTS = {'enabled': os.getenv('POOL_ENABLED', 'true').lower() == 'true', 'target': 60, 'dailyPercent': 20, 'residentPlays': 3,
             'budgetBytes': 2 * 1073741824, 'aiEnabled': True}
+# Share of unheard pool songs per source: the owner's list, radios of liked songs, and searches.
+SOURCE_SHARES = {'list': .25, 'radio': .55, 'search': .2}
 
 
 class Radio:
@@ -151,6 +154,7 @@ class Radio:
             if saved_profile.get('policyVersion') == POLICY_VERSION:
                 detail = build_report(evidence, saved_profile)
         return {'config': self.config(), 'counts': counts, 'pending': pending, 'bytes': self.used(),
+                'sources': dict(self.source_counts()), 'similar': self.a.similar.summary(),
                 'status': self.get('status', '正在准备新歌'), 'lastRotation': self.get('rotation', ''),
                 'analysis': {'day': self.get('analysisDay', ''), 'at': self.get('analysisAt', 0),
                              'summary': profile.get('summary', ''), 'focus': profile.get('focus', []),
@@ -280,6 +284,55 @@ class Radio:
         if pending >= 8:
             return
         rng = random.Random()
+        allowance = min(missing, 8 - pending)
+        slots = self.plan(self.source_counts(), allowance, config['target'])
+        offers = {}
+
+        def offer(source, count):
+            if source not in offers:
+                try:
+                    offers[source] = (self.a.similar.list_candidates(rng) if source == 'list'
+                                      else self.a.similar.radio_candidates(rng))
+                except Exception:
+                    offers[source] = []
+            return self.queue_candidates(offers[source], count) if count > 0 else 0
+
+        queued = offer('list', slots['list']) + offer('radio', slots['radio'])
+        # A song-level source that runs short lends its slots to the other before searches take them.
+        spare = allowance - slots['search'] - queued
+        for source in ('radio', 'list'):
+            got = offer(source, spare)
+            queued, spare = queued + got, spare - got
+        if allowance - queued > 0:
+            queued += self.search(allowance - queued, rng)
+        self.put('status', '正在准备新歌' if queued else '继续寻找未入库的新歌')
+
+    def source_counts(self):
+        with self.a.db() as c:
+            rows = c.execute("""SELECT p.metadata FROM pool_entries p LEFT JOIN tracks t ON t.id=p.track
+                LEFT JOIN content_checks q ON q.video=p.video LEFT JOIN jobs j ON j.video=p.video
+                WHERE (p.state='explore' AND t.id IS NOT NULL AND COALESCE(q.status,'approved')='approved')
+                   OR (p.state='pending' AND j.status IN ('queued','downloading'))""").fetchall()
+        counts = Counter()
+        for row in rows:
+            try:
+                counts[json.loads(row[0]).get('source', 'search')] += 1
+            except (ValueError, TypeError, AttributeError):
+                counts['search'] += 1
+        return counts
+
+    @staticmethod
+    def plan(counts, allowance, target):
+        """Give each slot to the source furthest below its share of the pool target."""
+        deficit = {source: share * target - counts.get(source, 0) for source, share in SOURCE_SHARES.items()}
+        slots = Counter()
+        for _ in range(allowance):
+            source = max(deficit, key=deficit.get)
+            slots[source] += 1
+            deficit[source] -= 1
+        return slots
+
+    def search(self, allowance, rng):
         personal = list(self.profile().get('queries', []))
         explore = self.a.discovery_queries(str(uuid.uuid4()), 'new', use_ai=False)
         rng.shuffle(personal)
@@ -299,7 +352,6 @@ class Radio:
         known_artists = sorted({a['artist'] for a in seed_artists} | set(artists) | explore_artists, key=len, reverse=True)
         queued = 0
         cursor = self.get('sourceCursor', 0)
-        allowance = min(missing, 8 - pending)
         if allowance < len(queries):
             queries = rng.sample(queries, allowance)
         searches = []
@@ -316,16 +368,16 @@ class Radio:
                     rows, _ = future.result()
                 except Exception:
                     continue
-                rows = [{**row,'discoveryQuery':query,'expectedArtist':expected} for row in rows]
+                rows = [{**row,'source':'search','discoveryQuery':query,'expectedArtist':expected} for row in rows]
                 rng.shuffle(rows)
                 rows.sort(key=lambda s: (str(s.get('artist','')).endswith(' - Topic'),
                     bool(re.search(r'official audio|original song|\bMV\b', s.get('title',''), re.I))), reverse=True)
                 share = math.ceil((allowance - queued) / (len(queries) - index))
                 queued += self.queue_candidates(rows, share)
-                if queued >= min(missing, 8 - pending):
+                if queued >= allowance:
                     break
         self.put('sourceCursor', cursor + 1)
-        self.put('status', '正在准备新歌' if queued else '继续寻找未入库的新歌')
+        return queued
 
     def ready(self, seed, page, mode, excluded):
         songs = self.a.recommendations(limit=10000, seed=seed, mode=mode)
@@ -367,6 +419,11 @@ class Radio:
             if local.hour >= 4:
                 self.rotate(local.date().isoformat())
             self.cleanup()
+            try:
+                # Radios of list songs and liked songs feed both candidate choice and ranking.
+                self.a.similar.refresh()
+            except Exception:
+                self.a.similar.status = 'unavailable'
             if time.time() >= self.next_fill:
                 self.next_fill = time.time() + 45
                 try:

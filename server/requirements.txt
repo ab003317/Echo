@@ -2,6 +2,7 @@ fastapi>=0.115,<1
 uvicorn>=0.34,<1
 mutagen>=1.47,<2
 yt-dlp[default]>=2026.6.9
+ytmusicapi>=1.12,<2
 httpx>=0.28,<1
 pytest>=8,<10
 tzdata>=2026.1

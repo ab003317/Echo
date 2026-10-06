@@ -192,9 +192,12 @@ def test_parallel_search_keeps_provenance_and_other_sources_when_one_fails(api,m
     with a.db() as con:
         sources=[json.loads(r[0]) for r in con.execute('SELECT metadata FROM pool_entries')]
     assert sources and len(sources)<=8
-    assert all(s['discoveryQuery'] for s in sources)
-    assert any(s['expectedArtist']=='A' for s in sources)
-    assert any(s['expectedArtist']=='LibraryArtist' for s in sources)
+    searched=[s for s in sources if s['source']=='search']
+    assert all(s['discoveryQuery'] for s in searched)
+    assert any(s['expectedArtist']=='A' for s in searched)
+    assert any(s['expectedArtist']=='LibraryArtist' for s in searched)
+    # The listed song itself is queued directly, without radios being available yet.
+    assert [s['id'] for s in sources if s['source']=='list']==['abcdefghijk']
 
 
 def test_rotation_once_and_grace_period(api):

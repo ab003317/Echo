@@ -28,8 +28,9 @@ from fastapi.staticfiles import StaticFiles
 from .ai import AIConfig
 from pydantic import BaseModel, Field
 from .radio import Radio
-from .content import ContentGuard, evaluate as evaluate_content
+from .content import ContentGuard
 from .seeds import Seeds, artist_matches
+from .similar import Similar, artist_keys
 from .history import History
 from .mixes import Mixes
 from .traits import AudioTraits
@@ -76,6 +77,7 @@ def initialize():
     radio.initialize()
     quality.initialize()
     seeds.initialize()
+    similar.initialize()
     mixes.initialize()
     history.initialize()
     charts.initialize()
@@ -158,29 +160,57 @@ def library():
 def recommendations(limit=40, seed="", mode="taste"):
     excluded = quality.excluded()
     songs = [s for s in library() if s['id'] not in excluded and s.get('pool') not in ('retiring', 'retired')]
+    # Credits are compared without channel suffixes, so "Reol Official" still counts as Reol.
+    credits = {s['id']: artist_keys(s['artist']) for s in songs}
+
+    def keyed(items):
+        table = {}
+        for item in items:
+            for key in artist_keys(item['artist']):
+                if abs(item['weight']) > abs(table.get(key, 0)):
+                    table[key] = item['weight']
+        return table
+
+    def strongest(table, keys):
+        present = [table[k] for k in keys if k in table]
+        return max(present, key=abs) if present else 0
+
     affinity: dict[str, float] = {}
     for s in songs:
-        affinity[s["artist"]] = affinity.get(s["artist"], 0) + math.log1p(s["plays"]) + 3 * s["favorite"]
+        for key in credits[s['id']]:
+            affinity[key] = affinity.get(key, 0) + math.log1p(s["plays"]) + 3 * s["favorite"]
     profile = radio.profile()
-    ai_weights = {a['artist'].casefold(): a['weight'] for a in profile.get('artists', [])}
-    seed_weights = {a['artist'].casefold(): a['weight'] for a in seeds.affinities()}
+    ai_weights = keyed(profile.get('artists', []))
+    seed_weights = keyed(seeds.affinities())
+    skips: dict[str, int] = {}
     with db() as c:
-        skips = {r[0]: r[1] for r in c.execute('''SELECT t.artist,COUNT(*) FROM playback_sessions p
+        for artist, count in c.execute('''SELECT t.artist,COUNT(*) FROM playback_sessions p
             JOIN tracks t ON t.id=p.track WHERE p.outcome='skipped' AND p.seconds<30 AND
             (p.duration<=0 OR p.seconds<p.duration*.25) AND p.at>? AND NOT EXISTS
             (SELECT 1 FROM content_checks q JOIN pool_entries pe ON pe.video=q.video
-             WHERE pe.track=p.track AND q.status IN ('rejected','review')) GROUP BY t.artist''', (time.time()-14*86400,))}
+             WHERE pe.track=p.track AND q.status IN ('rejected','review')) GROUP BY t.artist''', (time.time()-14*86400,)):
+            for key in artist_keys(artist):
+                skips[key] = skips.get(key, 0) + count
+    try:
+        closeness, listed = similar.similarity(songs), similar.listed(songs)
+    except Exception:
+        closeness, listed = {}, set()
     rng = random.Random(seed or time.strftime("%Y-%m-%d"))
     for s in songs:
+        keys = credits[s['id']]
         novelty = 1 / (1 + s["plays"])
         recent_penalty = 4 if time.time() - s["lastPlayed"] < 6 * 3600 else 0
-        fresh = 5 if s.get('pool') == 'explore' else 0
+        fresh = 2 if s.get('pool') == 'explore' else 0
         if mode == 'new': fresh *= 2
-        s["score"] = affinity.get(s["artist"], 0) * .5 + novelty * 3 + rng.random() * 5 - recent_penalty + fresh
-        s['score'] += ai_weights.get(s['artist'].casefold(), 0) * 2 - min(3, math.log1p(skips.get(s['artist'], 0)))
+        near = closeness.get(s['id'], 0)
+        s["score"] = strongest(affinity, keys) * .5 + novelty * 3 + rng.random() * 1.5 - recent_penalty + fresh
+        s['score'] += strongest(ai_weights, keys) * 2 - min(3, math.log1p(strongest(skips, keys)))
         # Owner-confirmed broad direction is weaker than explicit favorites and repeat plays.
-        s['score'] += seed_weights.get(s['artist'].casefold(), 0) * 1.5
-        s["reason"] = "来自你常听的歌手" if affinity.get(s["artist"], 0) > 0 else "探索音乐库"
+        s['score'] += strongest(seed_weights, keys) * 1.5
+        # Song-level evidence: neighbours of liked songs, and the owner's own list entries.
+        s['score'] += 4 * near + (2.5 if s['id'] in listed else 0)
+        s["reason"] = ("来自你的口味清单" if s['id'] in listed else "与你喜欢的歌相似" if near >= .3 else
+                       "来自你常听的歌手" if strongest(affinity, keys) > 0 else "探索音乐库")
     songs.sort(key=lambda s: s["score"], reverse=True)
     # Interleave artists so one heavily played artist cannot fill the first page.
     selected, selected_ids, counts = [], set(), {}
@@ -415,7 +445,7 @@ def import_job(job):
             if not info_files:
                 raise RuntimeError('下载后缺少音源资料，未加入自动音乐池')
             info = json.loads(info_files[0].read_text(encoding='utf-8'))
-            status, reason = quality.record(job['video'], *evaluate_content(info), info)
+            status, reason = quality.record(job['video'], *quality.verdict(job['video'], info), info)
             if status != 'approved':
                 with db() as c:
                     c.execute('UPDATE jobs SET status=?,error=? WHERE id=?', (status, reason, job['id']))
@@ -490,6 +520,7 @@ async def lifespan(app):
 
 quality = ContentGuard(sys.modules[__name__])
 seeds = Seeds(sys.modules[__name__])
+similar = Similar(sys.modules[__name__])
 radio = Radio(sys.modules[__name__])
 history = History(sys.modules[__name__])
 mixes = Mixes(sys.modules[__name__])

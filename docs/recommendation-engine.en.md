@@ -11,6 +11,11 @@ the pool settings on an individual server may differ.
 flowchart TD
     A[Mounted music folder] --> B[File and tag scan]
     C[Manual YouTube search or link] --> D[Import job]
+    S[Songs of the imported list] --> I
+    S --> R[YouTube Music song radios]
+    L[Favorite and replayed songs] --> R
+    R --> N[Similar-song ranking]
+    N --> I
     E[Listening statistics and imported preferences] --> F[Search phrases]
     G[Daily behavioral AI] --> F
     F --> H[YouTube search]
@@ -26,16 +31,18 @@ flowchart TD
 Existing music comes from `MUSIC_PATH`. The server rescans supported audio files
 about every five minutes, reading titles, artists, albums, duration and artwork.
 
-Music outside the library comes from YouTube/YouTube Music searches or video
-links. yt-dlp retrieves audio and FFmpeg produces m4a files. Echo does not use a
-YouTube Music account's personal recommendation API or automatically synchronize
-that account's liked songs.
+Music outside the library comes from YouTube/YouTube Music searches, video
+links, the songs of the imported list, and YouTube Music's public song radios,
+which need no sign-in and are read through
+[ytmusicapi](https://github.com/sigma67/ytmusicapi). yt-dlp retrieves audio and
+FFmpeg produces m4a files. Echo does not use a YouTube Music account's personal
+recommendations or automatically synchronize that account's liked songs.
 
 Without a search query, discovery lists only downloaded, indexed songs. Search
 results may require an import before playback.
 
 Source: [scanning, search, import and streaming](../server/app.py),
-[discovery pool](../server/radio.py).
+[discovery pool](../server/radio.py), [similar songs](../server/similar.py).
 
 ## Selecting background candidates
 
@@ -43,6 +50,42 @@ The pool targets **60 unheard discovery tracks**. Retained and permanent tracks
 do not count toward this target. It allows up to eight pending jobs and three
 concurrent downloads. When under target it attempts a refill about every 45
 seconds; source failures delay retries.
+
+Pool slots are shared by source: **list songs 25%, similar songs 55%, searches
+20%**. Each refill gives a slot to the source furthest below its share. When the
+list or similar songs run short, the other song source takes the slot first;
+only then does it go to searches.
+
+### List songs
+
+Songs of the imported list that the library does not yet hold (matched by title
+and credit) enter the pool directly by their list video ID. Songs whose radio is
+available go first; songs YouTube will not play come last, and a failed download
+is not retried.
+
+### Similar songs
+
+1. Seeds: every list song (weight 1), plus songs favorited or played at least
+   twice in Echo (weight `1 + 3 × favorite + ln(1 + qualifying plays) + 0.25 ×
+   min(high-completion plays, 4)`). A single play is not treated as preference.
+2. A local file without a video ID is looked up as a YouTube Music song by title
+   and artist. A result needs the same title and either a matching credit or a
+   length within 8 seconds (YouTube Music often writes artist names in another
+   script); otherwise the file is recorded as unmatched.
+3. For each seed, the first 50 songs of its YouTube Music song radio are read
+   and refreshed every 7 days; the background loop makes at most 8 requests per
+   15 seconds.
+4. A radio is ignored when its seed is not among its first three songs or when
+   more than half of it is promotion slots. A song present in over 40% of the
+   fetched radios counts as a promotion slot.
+5. Each candidate scores `Σ seed weight / (1 + position in that radio / 5)`:
+   songs recommended by more liked songs' radios, and earlier, score higher.
+   After removing songs already in the library or the list, candidates are drawn
+   from the top 150 with probability weighted by score.
+
+### Searches
+
+Search slots keep the original process:
 
 1. With AI preferences, select two AI search phrases and one exploration phrase.
    Otherwise select three exploration phrases.
@@ -67,6 +110,13 @@ metadata: teaser, preview, short-version, interview and tutorial markers, live
 status, release fields, verified sources, music categories, chapters and track
 lists.
 
+List songs are only rejected when live or not yet published. Similar songs that
+YouTube Music lists as official audio (ATV) or official music videos (OMV) are
+only checked for teaser, short-version and similar format markers. An upload by
+a verified channel that credits itself in the title, is categorized as music,
+lasts 1–15 minutes and is not karaoke, a cover, a lyric video or a loop also
+counts as a song.
+
 Complete albums, medleys, compilations and performances can qualify. Duration
 alone is not a rejection rule. Missing valid duration requires verification;
 insufficient evidence also blocks automatic admission. Imports retain a 300 MB
@@ -87,12 +137,17 @@ For You uses a weighted score; AI does not arrange every track individually.
 | --- | --- |
 | Artist affinity | Sum `ln(1 + plays) + 3 × favorite` across that artist's tracks, multiplied by 0.5 |
 | Unfamiliarity | Add `3 / (1 + track plays)` |
-| Random exploration | Add a random value from 0 up to 5 |
+| Random exploration | Add a random value from 0 up to 1.5 |
 | Recent playback | Subtract 4 if played within six hours |
-| Discovery pool | Add 5 for an `explore` track; Fresh adds 10 instead |
+| Discovery pool | Add 2 for an `explore` track; Fresh adds 4 instead |
+| Similar songs | Add `4 × √(the track's similarity score ÷ the highest score)`, matched by video ID or by title and credit |
+| List songs | Add 2.5 when the track itself is an entry of the imported list |
 | AI artist preference | Add `2 × AI artist weight` |
 | Recent early skips | Subtract `min(3, ln(1 + intentional early skips for this artist in 14 days))` |
 | Imported preferences | Add `1.5 × album-balanced artist weight` |
+
+Artist names are compared without channel suffixes such as Official, Channel or
+Topic, and collaboration credits are split; "Reol Official" counts as Reol.
 
 After sorting, an initial pass admits at most two tracks per artist before
 filling the remaining positions. Pull-to-refresh changes the random seed and the
@@ -169,8 +224,10 @@ rejected.
 **Current limits:** routine library audio features mainly support style mixes.
 The behavioral AI's `audioSamples` currently come from imported preference audio
 samples. These datasets are not yet combined into library-wide recommendation
-features. There is no audio embedding/similarity index or full-candidate audio
-screening before download.
+features. Song similarity comes from co-occurrence in YouTube Music radios, not
+from audio embeddings; list songs that cannot be played anonymously have no
+radio and cannot be downloaded. Candidates are not listened to in full before
+download.
 
 ## Rotation, retention and phone downloads
 
