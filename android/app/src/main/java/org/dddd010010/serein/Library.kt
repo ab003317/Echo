@@ -131,7 +131,7 @@ object Library {
         get() = prefs.getLong("budget", 2L * 1024 * 1024 * 1024)
         set(v) { prefs.edit().putLong("budget", v).apply(); changed() }
     var sources: Set<String>
-        get() = prefs.getStringSet("sources", setOf("recent", "frequent", "favorite"))!!.toSet()
+        get() = prefs.getStringSet("sources", setOf("recent", "frequent", "favorite", "recommended"))!!.toSet()
         set(v) { prefs.edit().putStringSet("sources", v.toSet()).apply(); changed() }
     val status: String
         get() {
@@ -160,6 +160,13 @@ object Library {
         val ids=data.optJSONArray("excluded") ?: return
         val next=(0 until ids.length()).map{ids.getString(it)}.toSet()
         if(next!=contentExcluded){prefs.edit().putStringSet("contentExcluded",next).apply();changed()}
+    }
+    /** Songs the server saw skipped early more often than played; automatic offline copies drop them. */
+    val disliked: Set<String> get() = prefs.getStringSet("disliked", emptySet())!!.toSet()
+    @Synchronized fun applyDisliked(data:JSONObject) {
+        val ids=data.optJSONArray("disliked") ?: return
+        val next=(0 until ids.length()).map{ids.getString(it)}.toSet()
+        if(next!=disliked){prefs.edit().putStringSet("disliked",next).apply();changed()}
     }
     @Synchronized fun hideReportedTrack(id:String) {
         save("catalog",JSONArray(array("catalog").objects().filter{it.getString("id")!=id}))
@@ -345,11 +352,14 @@ object Library {
         flush(client)
         val library=api("library", client=client)
         applyContentExclusions(library)
+        applyDisliked(library)
         merge(library.getJSONArray("tracks"))
         val recs = api("recommendations?seed=" + java.net.URLEncoder.encode(seed,"UTF-8"), client=client).getJSONArray("tracks").objects().map { it.getString("id") }
         val valid=songs.map{it.id}.toSet()
+        val today=java.time.LocalDate.now().toString()
         val ordered=if(seed.isNotBlank())FeedContinuity.refresh(recIds,recs,{it}).take(40)
-            else (recIds.filter{it in valid}+recs).distinct().take(40)
+            else FeedContinuity.daily(recIds,recs,valid,prefs.getString("recommendationsDay","")==today)
+        prefs.edit().putString("recommendationsDay",today).apply()
         save("recommendations", JSONArray(ordered))
         runCatching{acceptMixFeed(api("mixes",client=client))}
     }

@@ -26,8 +26,10 @@ def test_event_upsert_retention_and_resident(api):
     c,a=api
     tid=pool(a)
     assert send(c,tid).status_code==200
-    assert a.library()[0]['pool']=='kept'
+    # A one-second listen is not a play and does not protect a discovery song.
+    assert a.library()[0]['pool']=='explore'
     send(c,tid,seconds=25,seq=2)
+    assert a.library()[0]['pool']=='kept'
     send(c,tid,seconds=2,seq=1)
     send(c,tid,seconds=40,seq=3,outcome='completed')
     send(c,tid,seconds=100,seq=4)
@@ -60,6 +62,9 @@ def test_rotation_keeps_heard_and_original_files(api):
     assert (a.ROOT/'Artist_Song.wav').exists()  # Not an owned auto-download path.
     send(c,tid,seconds=2,outcome='skipped')
     a.radio.rotate('2026-10-02',now+86400)
+    assert a.library()[0]['pool']=='retiring'
+    send(c,tid,event='session-two',seconds=25,outcome='stopped')
+    a.radio.rotate('2026-10-03',now+2*86400)
     assert a.library()[0]['pool']=='kept'
 
 
@@ -71,6 +76,8 @@ def test_rotated_tracks_leave_recommendations_but_remain_playable_and_can_be_res
     assert a.recommendations()==[]
     assert c.post('/music/api/discover',json={}).json()['tracks']==[]
     send(c,tid,seconds=5,outcome='stopped')
+    assert a.recommendations()==[]
+    send(c,tid,event='session-two',seconds=25,outcome='stopped')
     assert a.recommendations()[0]['id']==tid
 
 
@@ -120,7 +127,7 @@ def test_cleanup_owned_only_and_offline_rescue(api):
         con.execute('UPDATE pool_entries SET retire_at=?', (time.time()-1,))
     a.radio.cleanup()
     assert not target.exists() and not a.library()
-    assert send(c,tid,seconds=5,outcome='stopped').status_code==200
+    assert send(c,tid,seconds=25,outcome='stopped').status_code==200
     with a.db() as con:
         assert con.execute('SELECT state FROM pool_entries').fetchone()[0]=='kept'
         assert con.execute('SELECT status FROM jobs').fetchone()[0]=='queued'
@@ -237,3 +244,52 @@ def test_old_unverified_summary_is_invalidated(api):
     a.radio.put('profile',{'summary':'Title implies genre','queries':['a','b','c']})
     assert a.radio.profile()=={}
     assert c.get('/music/api/pool').json()['analysis']['summary']==''
+
+
+def test_repeated_early_skips_retire_and_hide_a_song(api):
+    c,a=api
+    tid=pool(a,'kept')
+    send(c,tid,event='skip-session-1',seconds=2,outcome='skipped')
+    assert a.radio.settle()==0 and a.recommendations()[0]['id']==tid
+    send(c,tid,event='skip-session-2',seconds=3,outcome='skipped')
+    # Kept only by brief listens: back to discovery, then retired as disliked.
+    assert a.radio.settle()==1
+    assert a.library()[0]['pool']=='retiring' and a.recommendations()==[]
+    assert c.get('/music/api/library').json()['disliked']==[tid]
+    # A later early skip does not rescue it; a favorite does.
+    a.radio.cleanup(time.time()+4*86400)
+    c.put(f'/music/api/tracks/{tid}/favorite',json={'liked':True,'updated':time.time()})
+    assert c.get('/music/api/library').json()['disliked']==[]
+    assert a.library()[0]['pool']=='resident'
+
+
+def test_plays_outweigh_occasional_skips(api):
+    c,a=api
+    tid=pool(a)
+    for n in range(2):
+        send(c,tid,event=f'play-session-{n}',seconds=35,outcome='completed')
+    for n in range(2):
+        send(c,tid,event=f'skip-session-{n}',seconds=2,outcome='skipped')
+    assert a.radio.settle()==0 and a.library()[0]['pool']=='kept'
+    send(c,tid,event='skip-session-3',seconds=2,outcome='skipped')
+    assert a.radio.settle()==1
+
+
+def test_brief_listens_no_longer_keep_songs(api):
+    c,a=api
+    tid=pool(a)
+    with a.db() as con:
+        con.execute("UPDATE pool_entries SET state='kept'")
+    send(c,tid,seconds=4,outcome='stopped')
+    a.radio.settle()
+    assert a.library()[0]['pool']=='explore'
+
+
+def test_single_skip_lowers_only_that_song(api):
+    c,a=api
+    (a.ROOT/'Artist_Other.wav').write_bytes((a.ROOT/'Artist_Song.wav').read_bytes())
+    a.scan(wait=True)
+    skipped=next(s['id'] for s in a.library() if s['title']=='Song')
+    send(c,skipped,event='skip-session-1',seconds=2,outcome='skipped')
+    order=[s['title'] for s in a.recommendations(seed='fixed')]
+    assert order==['Other','Song']

@@ -21,6 +21,7 @@ from .listening_report import build_report, period_metrics
 HK = LOCAL_TZ
 DEFAULTS = {'enabled': os.getenv('POOL_ENABLED', 'true').lower() == 'true', 'target': 60, 'dailyPercent': 20, 'residentPlays': 3,
             'budgetBytes': 2 * 1073741824, 'aiEnabled': True}
+EARLY_SKIP = "outcome='skipped' AND seconds<30 AND (duration<=0 OR seconds<duration*.25)"
 # Share of unheard pool songs per source: the owner's list, radios of liked songs, and searches.
 SOURCE_SHARES = {'list': .25, 'radio': .55, 'search': .2}
 
@@ -79,13 +80,27 @@ class Radio:
         # Unverified prose from older analysis must not survive the stricter evidence policy.
         return profile if profile.get('policyVersion') == POLICY_VERSION else {}
 
+    def disliked(self, c, track=None):
+        """Skipped early at least twice and more often than heard through; favorites never count."""
+        rows = c.execute(f'''SELECT p.track FROM playback_sessions p {'WHERE p.track=?' if track else ''} GROUP BY p.track
+            HAVING SUM(CASE WHEN {EARLY_SKIP} THEN 1 ELSE 0 END)>=2
+               AND SUM(CASE WHEN {EARLY_SKIP} THEN 1 ELSE 0 END)>(SELECT COUNT(*) FROM listens l WHERE l.track=p.track)
+               AND NOT EXISTS (SELECT 1 FROM favorites f WHERE f.track=p.track AND f.liked=1)''',
+            (track,) if track else ()).fetchall()
+        return {r[0] for r in rows}
+
     def promote(self, c, track, heard=False, permanent=False):
+        """heard means a qualifying play; an early skip alone never protects a song."""
         favorite = c.execute('SELECT liked FROM favorites WHERE track=?', (track,)).fetchone()
+        favorite = bool(favorite and favorite[0])
+        protected = self.a.mixes.protected(c, track)
+        if not (permanent or favorite or protected) and self.disliked(c, track):
+            return
         plays = c.execute('SELECT COUNT(*) FROM listens WHERE track=?', (track,)).fetchone()[0]
-        resident = permanent or bool(favorite and favorite[0]) or plays >= self.config()['residentPlays']
+        resident = permanent or favorite or plays >= self.config()['residentPlays']
         if resident:
             c.execute("UPDATE pool_entries SET state='resident',retire_at=0 WHERE track=?", (track,))
-        elif heard or plays or self.a.mixes.protected(c, track):
+        elif heard or plays or protected:
             c.execute("UPDATE pool_entries SET state='kept',retire_at=0 WHERE track=? AND state!='resident'", (track,))
 
     def event(self, body):
@@ -116,7 +131,7 @@ class Radio:
                 c.execute('''INSERT INTO listens VALUES(?,?,?,?) ON CONFLICT(event) DO UPDATE SET
                     seconds=MAX(listens.seconds,excluded.seconds),at=MAX(listens.at,excluded.at)''',
                     (body.event, body.track, seconds, min(body.at, now)))
-            if seconds > 0:
+            if seconds >= threshold:
                 self.promote(c, body.track, heard=True)
                 # A long-offline phone can rescue a rotated song using its stable video identity.
                 if not track and entry:
@@ -217,7 +232,7 @@ class Radio:
             c.execute('BEGIN IMMEDIATE')
             # Reconcile old-client listens and favorites before selecting rotation candidates.
             for row in c.execute("SELECT track FROM pool_entries WHERE track!='' AND state!='resident'").fetchall():
-                heard = bool(c.execute('SELECT 1 FROM playback_sessions WHERE track=? AND seconds>0 LIMIT 1', (row[0],)).fetchone())
+                heard = bool(c.execute('SELECT 1 FROM listens WHERE track=? LIMIT 1', (row[0],)).fetchone())
                 self.promote(c, row[0], heard=heard)
             eligible = [r[0] for r in c.execute("SELECT video FROM pool_entries WHERE state='explore' AND created<? AND last_access<?", (now - 86400, now - 6 * 3600))]
             random.Random(day).shuffle(eligible)
@@ -225,6 +240,22 @@ class Radio:
             for video in eligible[:count]:
                 c.execute("UPDATE pool_entries SET state='retiring',retire_at=? WHERE video=?", (now + 72 * 3600, video))
         self.put('rotation', day)
+
+    def settle(self, now=None):
+        """Undo retention earned by brief listens, and retire pool songs the owner keeps skipping."""
+        now = now or time.time()
+        with self.a.db() as c:
+            c.execute('BEGIN IMMEDIATE')
+            c.execute("""UPDATE pool_entries SET state='explore' WHERE state='kept' AND track!='' AND
+                NOT EXISTS (SELECT 1 FROM listens l WHERE l.track=pool_entries.track) AND
+                NOT EXISTS (SELECT 1 FROM favorites f WHERE f.track=pool_entries.track AND f.liked=1) AND
+                NOT EXISTS (SELECT 1 FROM saved_mix_tracks m WHERE m.track=pool_entries.track)""")
+            retired = 0
+            for track in self.disliked(c):
+                if not self.a.mixes.protected(c, track):
+                    retired += c.execute("UPDATE pool_entries SET state='retiring',retire_at=? WHERE track=? AND state IN ('explore','kept')",
+                                         (now + 72 * 3600, track)).rowcount
+        return retired
 
     def cleanup(self, now=None):
         now = now or time.time()
@@ -234,7 +265,7 @@ class Radio:
                 c.execute('BEGIN IMMEDIATE')
                 rows = c.execute("SELECT p.*,t.path FROM pool_entries p JOIN tracks t ON t.id=p.track WHERE p.state='retiring' AND p.retire_at<? AND p.last_access<?", (now, now - 6 * 3600)).fetchall()
                 for row in rows:
-                    heard = bool(c.execute('SELECT 1 FROM playback_sessions WHERE track=? AND seconds>0 LIMIT 1', (row['track'],)).fetchone())
+                    heard = bool(c.execute('SELECT 1 FROM listens WHERE track=? LIMIT 1', (row['track'],)).fetchone())
                     self.promote(c, row['track'], heard=heard)
                     state = c.execute('SELECT state FROM pool_entries WHERE video=?', (row['video'],)).fetchone()[0]
                     if state != 'retiring':
@@ -418,6 +449,7 @@ class Radio:
                 return
             if local.hour >= 4:
                 self.rotate(local.date().isoformat())
+            self.settle()
             self.cleanup()
             try:
                 # Radios of list songs and liked songs feed both candidate choice and ranking.

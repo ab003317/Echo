@@ -119,6 +119,7 @@ class Similar:
         lookups = []
         excluded = self.a.quality.excluded()
         with self.a.db() as c:
+            excluded |= self.a.radio.disliked(c)
             videos = self.videos(c)
             looked = {r[0] for r in c.execute('SELECT track FROM similar_lookups')}
             rows = c.execute('''SELECT t.id,t.title,t.artist,t.duration,COALESCE(f.liked,0) liked,

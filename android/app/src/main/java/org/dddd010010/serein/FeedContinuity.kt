@@ -19,4 +19,8 @@ object FeedContinuity {
         }
         return next
     }
+
+    /** Background syncs keep one day's list, so offline copies do not churn, then adopt the next day's list. */
+    fun <T> daily(previous:List<T>,fresh:List<T>,valid:Set<T>,sameDay:Boolean,size:Int=40):List<T> =
+        (if(sameDay || fresh.isEmpty()) previous.filter{it in valid}+fresh else fresh).distinct().take(size)
 }

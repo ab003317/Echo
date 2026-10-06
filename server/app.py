@@ -27,7 +27,7 @@ from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from .ai import AIConfig
 from pydantic import BaseModel, Field
-from .radio import Radio
+from .radio import Radio, EARLY_SKIP
 from .content import ContentGuard
 from .seeds import Seeds, artist_matches
 from .similar import Similar, artist_keys
@@ -184,6 +184,9 @@ def recommendations(limit=40, seed="", mode="taste"):
     seed_weights = keyed(seeds.affinities())
     skips: dict[str, int] = {}
     with db() as c:
+        disliked = radio.disliked(c)
+        song_skips = {r[0]: r[1] for r in c.execute(
+            "SELECT track,COUNT(*) FROM playback_sessions WHERE " + EARLY_SKIP + " GROUP BY track")}
         for artist, count in c.execute('''SELECT t.artist,COUNT(*) FROM playback_sessions p
             JOIN tracks t ON t.id=p.track WHERE p.outcome='skipped' AND p.seconds<30 AND
             (p.duration<=0 OR p.seconds<p.duration*.25) AND p.at>? AND NOT EXISTS
@@ -191,6 +194,8 @@ def recommendations(limit=40, seed="", mode="taste"):
              WHERE pe.track=p.track AND q.status IN ('rejected','review')) GROUP BY t.artist''', (time.time()-14*86400,)):
             for key in artist_keys(artist):
                 skips[key] = skips.get(key, 0) + count
+    # Songs the owner keeps skipping leave recommendations entirely; a single skip only lowers one song.
+    songs = [s for s in songs if s['id'] not in disliked]
     try:
         closeness, listed = similar.similarity(songs), similar.listed(songs)
     except Exception:
@@ -208,7 +213,7 @@ def recommendations(limit=40, seed="", mode="taste"):
         # Owner-confirmed broad direction is weaker than explicit favorites and repeat plays.
         s['score'] += strongest(seed_weights, keys) * 1.5
         # Song-level evidence: neighbours of liked songs, and the owner's own list entries.
-        s['score'] += 4 * near + (2.5 if s['id'] in listed else 0)
+        s['score'] += 4 * near + (2.5 if s['id'] in listed else 0) - min(4, 1.5 * song_skips.get(s['id'], 0))
         s["reason"] = ("来自你的口味清单" if s['id'] in listed else "与你喜欢的歌相似" if near >= .3 else
                        "来自你常听的歌手" if strongest(affinity, keys) > 0 else "探索音乐库")
     songs.sort(key=lambda s: s["score"], reverse=True)
@@ -537,7 +542,10 @@ def health():
 
 @app.get("/music/api/library")
 def get_library():
-    return {"tracks": library(), "updated": time.time(), 'excluded': list(quality.excluded())}
+    with db() as c:
+        disliked = sorted(radio.disliked(c))
+    # Phones drop disliked songs from automatic offline copies; manual keeps are untouched.
+    return {"tracks": library(), "updated": time.time(), 'excluded': list(quality.excluded()), 'disliked': disliked}
 
 
 @app.post("/music/api/scan")

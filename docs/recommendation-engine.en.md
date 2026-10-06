@@ -142,6 +142,7 @@ For You uses a weighted score; AI does not arrange every track individually.
 | Discovery pool | Add 2 for an `explore` track; Fresh adds 4 instead |
 | Similar songs | Add `4 × √(the track's similarity score ÷ the highest score)`, matched by video ID or by title and credit |
 | List songs | Add 2.5 when the track itself is an entry of the imported list |
+| Track early skips | Subtract `min(4, 1.5 × intentional early skips of this track)`; disliked tracks are excluded |
 | AI artist preference | Add `2 × AI artist weight` |
 | Recent early skips | Subtract `min(3, ln(1 + intentional early skips for this artist in 14 days))` |
 | Imported preferences | Add `1.5 × album-balanced artist weight` |
@@ -169,8 +170,14 @@ later. Event IDs and sequence numbers support deduplication and updates.
   duration actually heard.
 - An early skip must be intentional, below 30 seconds and below 25% of duration.
   Pauses and playback failures are not early skips.
-- Any positive listening time retains a discovery track. Favorites, manual
-  retention or three qualifying plays promote it to the permanent pool.
+- A qualifying play, a favorite or a saved mix retains a discovery track; a
+  few seconds or an early skip does not. Favorites, manual retention or three
+  qualifying plays promote it to the permanent pool.
+- **Disliked**: a track skipped early at least twice, and more often than it
+  was played through (favorites excepted). It leaves recommendations and
+  discovery; discovery or retained pool copies retire and are removed after
+  72 hours unless a saved mix uses them; phones drop it from automatic offline
+  copies. Original music files are never deleted.
 
 With a configured key and AI enabled, the server analyzes the preceding day
 after 04:00 in its configured timezone. It also attempts an initial analysis
@@ -242,7 +249,10 @@ pauses rather than deleting retained songs. The default pool budget is 2 GB,
 adjustable in Settings. Refilling also pauses below 1 GB of free host storage.
 
 Phone offline storage has a separate budget and selects from recent, frequent,
-favorite, recommended and manually retained music. Wi-Fi connections trigger
+favorite, recommended and manually retained music. Recommended is on by
+default; background syncs switch to each day's recommendations and keep them
+for that day to avoid repeated downloads. Disliked tracks are not saved
+automatically, although manually retained copies stay. Wi-Fi connections trigger
 work, alongside an approximately 15-minute periodic check; Android scheduling
 can delay execution. Network traffic and DNS bind to Wi-Fi, with resumable
 downloads. Downloaded on the server does not mean saved offline on the phone.

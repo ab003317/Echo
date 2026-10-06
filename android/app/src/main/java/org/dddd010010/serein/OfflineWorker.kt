@@ -27,13 +27,9 @@ class OfflineWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ct
             Library.setStatus(R.string.ui_preparing_offline_music)
             Library.refresh(client)
             val all = Library.songs
-            val groups = mutableListOf<List<Song>>()
-            if(Library.auto) {
-                if("recent" in Library.sources) groups.add(all.filter { Library.last(it)>0 }.sortedByDescending { Library.last(it) })
-                if("frequent" in Library.sources) groups.add(all.filter { Library.plays(it)>0 }.sortedByDescending { Library.plays(it) })
-                if("favorite" in Library.sources) groups.add(all.filter { it.id in Library.favorites })
-                if("recommended" in Library.sources) groups.add(Library.recIds.mapNotNull { id -> all.find { it.id == id } })
-            } else groups.add(all.filter { Library.available(it) }.sortedByDescending { Library.last(it) })
+            val groups = if(Library.auto) OfflinePlan.sources(all, { it.id }, Library.sources, Library.recIds,
+                    Library.favorites, Library.disliked, { Library.last(it) }, { Library.plays(it) })
+                else listOf(all.filter { Library.available(it) }.sortedByDescending { Library.last(it) })
             fun entries(songs: List<Song>) = songs.map { OfflinePlan.Entry(it.id, it.size) }
             val pinned = all.filter { it.id in Library.pinned }
             val plan = OfflinePlan.choose(entries(pinned), groups.map { entries(it) }, Library.excluded, Library.budget)

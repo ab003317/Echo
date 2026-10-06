@@ -21,6 +21,17 @@ class FeedContinuityTest {
         val mixed=FeedContinuity.refresh(old,listOf(1,1,2,3,4,100,101,102,103,104),{it},Random(2))
         assertEquals(mixed.size,mixed.toSet().size)
     }
+    @Test fun backgroundListStaysWithinADayAndChangesTheNextDay() {
+        val old=(0 until 40).toList();val fresh=(100 until 140).toList()
+        // Same day: removed songs are replaced from the fresh list, the rest stay put.
+        val valid=(old-setOf(3,7)+fresh).toSet()
+        val sameDay=FeedContinuity.daily(old,fresh,valid,sameDay=true)
+        assertEquals(old-setOf(3,7)+listOf(100,101),sameDay)
+        // New day: the day's recommendations replace yesterday's offline set.
+        assertEquals(fresh,FeedContinuity.daily(old,fresh,valid,sameDay=false))
+        // A failed fetch never empties the list.
+        assertEquals(old,FeedContinuity.daily(old,emptyList(),old.toSet(),sameDay=false))
+    }
     @Test fun retainedSongsAndPositionsVaryBetweenRefreshes() {
         val outcomes=(1..12).map { seed -> FeedContinuity.refresh((0..35).toList(),(100..117).toList(),{it},Random(seed)) }
         assertTrue(outcomes.distinct().size>10)

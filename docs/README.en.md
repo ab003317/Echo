@@ -15,8 +15,9 @@ the phone downloads music for offline listening according to the selected settin
 - Background and lock-screen playback, queue, shuffle, repeat and listening history.
 - Automatic Wi-Fi downloads from recent, frequent, favorite and recommended music,
   with a storage budget, manual retention and deletion.
-- A prepared discovery pool: heard tracks stay, frequently played tracks become
-  permanent, and part of the unheard pool rotates daily.
+- A prepared discovery pool: played tracks stay, frequently played tracks become
+  permanent, part of the unheard pool rotates daily, and repeatedly skipped
+  tracks leave.
 - Daily artist, series, style and random mixes. Saved mixes are retained.
   Style mixes require actual audio evidence.
 - YouTube and Apple Music regional charts, Echo listening rankings, and releases
